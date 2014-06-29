@@ -13,7 +13,7 @@ type RunningObject struct {
 	Time        syscall.Timeval
 	TimeLimit   int64
 	MemoryLimit int64
-	memory      uint64
+	Memory      int64
 }
 
 func (r *RunningObject) Millisecond() int64 {
@@ -32,8 +32,18 @@ func Run(src string, args []string) {
 	if err != nil {
 		panic(err)
 	}
-	//set CPU limit
-	err = setLimit(proc.Pid)
+	//set CPU time limit
+	var rlimit syscall.Rlimit
+	rlimit.Cur = 1
+	rlimit.Max = 1 + 1
+	err = prLimit(proc.Pid, syscall.RLIMIT_CPU, &rlimit)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	rlimit.Cur = 100
+	rlimit.Max = 1024 + 1024
+	err = prLimit(proc.Pid, syscall.RLIMIT_STACK, &rlimit)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -70,8 +80,10 @@ func Run(src string, args []string) {
 				fmt.Println("SIGXCPU")
 				runningObject.Time = rusage.Utime
 				fmt.Println(runningObject.Millisecond())
-			//case syscall.SIGTRAP:
-			//	fmt.Println("SIGTRAP")
+			case syscall.SIGSEGV:
+				fmt.Println("SIGSEGV")
+				runningObject.Memory = rusage.Minflt
+				fmt.Println(runningObject.Memory)
 			default:
 				fmt.Println("default")
 			}

@@ -5,12 +5,8 @@ import (
 	"unsafe"
 )
 
-func setLimit(pid int) error {
-
-	_, _, errno := syscall.RawSyscall6(syscall.SYS_PRLIMIT64, uintptr(pid), syscall.RLIMIT_CPU, uintptr(unsafe.Pointer(&syscall.Rlimit{
-		Cur: 1,
-		Max: 1 + 1,
-	})), 0, 0, 0)
+func prLimit(pid int, limit uintptr, rlimit *syscall.Rlimit) error {
+	_, _, errno := syscall.RawSyscall6(syscall.SYS_PRLIMIT64, uintptr(pid), limit, uintptr(unsafe.Pointer(rlimit)), 0, 0, 0)
 	var err error
 	if errno != 0 {
 		err = errno
