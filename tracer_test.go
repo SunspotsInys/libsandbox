@@ -5,16 +5,22 @@ import (
 )
 
 func TestTime(t *testing.T) {
-	Run("/bin/sleep", []string{"sleep", "5"})
+	obj := Run("/bin/sleep", []string{"sleep", "5"}, 1000, 10000)
+	if obj.Status != TLE {
+		t.Fatal("time exceed test failed.")
+	}
 }
 
-/*
 func TestCPUTime(t *testing.T) {
-	Run("test/main", []string{"main"})
+	obj := Run("test/time", []string{"time"}, 1000, 10000)
+	if obj.Status != TLE {
+		t.Fatal("time exceed test failed")
+	}
 }
 
-/*
-func TestMemoryTime(t *testing.T) {
-	Run("test/memo", []string{"memo"})
+func TestMemory(t *testing.T) {
+	obj := Run("test/memo", []string{"memo"}, 1000, 10000)
+	if obj.Status != MLE {
+		t.Fatal("memory exceed test failed")
+	}
 }
-*/

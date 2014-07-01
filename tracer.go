@@ -10,17 +10,25 @@ import (
 	"github.com/hjr265/ptrace.go/ptrace"
 )
 
+const (
+	AC uint64 = iota
+	PE
+	TLE
+	MLE
+	WA
+	RE
+	OLE
+	CE
+	SE
+)
+
 type RunningObject struct {
-	Time        syscall.Timeval
 	Proc        *os.Process
 	TimeLimit   int64
 	MemoryLimit int64
 	Memory      int64
+	Time        int64
 	Status      uint64
-}
-
-func (r *RunningObject) Millisecond() int64 {
-	return r.Time.Sec*1000 + r.Time.Usec/1000
 }
 
 func (r *RunningObject) RunTick(dur time.Duration) {
@@ -30,12 +38,14 @@ func (r *RunningObject) RunTick(dur time.Duration) {
 	}
 }
 
-func Run(src string, args []string) *RunningObject {
+func Run(src string, args []string, timeLimit int64, memoryLimit int64) *RunningObject {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	var rusage syscall.Rusage
-	var incall = true
+	//var incall = true
 	var runningObject RunningObject
+	runningObject.TimeLimit = timeLimit
+	runningObject.MemoryLimit = memoryLimit
 	proc, err := os.StartProcess(src, args, &os.ProcAttr{Sys: &syscall.SysProcAttr{
 		Ptrace: true},
 	})
@@ -45,16 +55,16 @@ func Run(src string, args []string) *RunningObject {
 	runningObject.Proc = proc
 	//set CPU time limit
 	var rlimit syscall.Rlimit
-	rlimit.Cur = 1
+	rlimit.Cur = 2
 	rlimit.Max = 1 + 1
 	err = prLimit(proc.Pid, syscall.RLIMIT_CPU, &rlimit)
 	if err != nil {
 		fmt.Println(err)
 		return &runningObject
 	}
-	go runningObject.RunTick(time.Second)
+	go runningObject.RunTick(time.Millisecond)
 	rlimit.Cur = 1024
-	rlimit.Max = 1024 + 1024
+	rlimit.Max = rlimit.Cur + 1024
 	err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
 	if err != nil {
 		fmt.Println(err)
@@ -65,6 +75,7 @@ func Run(src string, args []string) *RunningObject {
 		fmt.Println(err)
 		return &runningObject
 	}
+
 	tracer, err := ptrace.Attach(proc)
 	if err != nil {
 		panic(err)
@@ -94,25 +105,32 @@ func Run(src string, args []string) *RunningObject {
 		if status.Stopped() && status.StopSignal() != syscall.SIGTRAP {
 			switch status.StopSignal() {
 			case syscall.SIGALRM:
-				fmt.Println("SIGALRM")
-				runningObject.Time = rusage.Utime
-				fmt.Println(runningObject.Millisecond())
-				return &runningObject
+				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
+				if runningObject.Time > runningObject.TimeLimit {
+					runningObject.Status = TLE
+					return &runningObject
+				}
+				realTime := realTime(runningObject.Proc.Pid)
+				if realTime > runningObject.TimeLimit {
+					runningObject.Status = TLE
+					return &runningObject
+				}
+				vs := virtualMemory(runningObject.Proc.Pid)
+				if vs/1000 > runningObject.MemoryLimit {
+					runningObject.Memory = vs / 1000
+					runningObject.Status = MLE
+					return &runningObject
+				}
 			case syscall.SIGXCPU:
-				fmt.Println("SIGXCPU")
-				runningObject.Time = rusage.Utime
-				fmt.Println(runningObject.Millisecond())
+				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
+				runningObject.Status = TLE
 				return &runningObject
 			case syscall.SIGSEGV:
-				fmt.Println("SIGSEGV")
-				runningObject.Memory = rusage.Minflt
-				fmt.Println(runningObject.Memory)
+				runningObject.Status = MLE
 				return &runningObject
 			default:
-				fmt.Println("default")
 			}
-			return &runningObject
-		} else {
+		} /* else {
 			regs, err := tracer.GetRegs()
 			if err != nil {
 				panic(err)
@@ -137,6 +155,7 @@ func Run(src string, args []string) *RunningObject {
 				}
 			}
 		}
+		*/
 		//0表示不发出信号
 		err = tracer.Syscall(syscall.Signal(0))
 		if err != nil {
