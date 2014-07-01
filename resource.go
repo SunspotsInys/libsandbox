@@ -13,13 +13,13 @@ import (
 import "C"
 
 var (
-	sc_clk_tck   int64
-	sc_page_size int64
+	sc_clk_tck int64
+	//sc_page_size int64
 )
 
 func init() {
 	sc_clk_tck = int64(C.sysconf(C._SC_CLK_TCK))
-	sc_page_size = int64(C.sysconf(C._SC_PAGE_SIZE))
+	//sc_page_size = int64(C.sysconf(C._SC_PAGE_SIZE))
 }
 
 func virtualMemory(pid int) int64 {

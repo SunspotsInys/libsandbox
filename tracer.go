@@ -52,7 +52,12 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 	if err != nil {
 		panic(err)
 	}
+	tracer, err := ptrace.Attach(proc)
+	if err != nil {
+		panic(err)
+	}
 	runningObject.Proc = proc
+	go runningObject.RunTick(time.Millisecond)
 	//set CPU time limit
 	var rlimit syscall.Rlimit
 	rlimit.Cur = 2
@@ -62,7 +67,6 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 		fmt.Println(err)
 		return &runningObject
 	}
-	go runningObject.RunTick(time.Millisecond)
 	rlimit.Cur = 1024
 	rlimit.Max = rlimit.Cur + 1024
 	err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
@@ -75,11 +79,6 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 		fmt.Println(err)
 		return &runningObject
 	}
-
-	tracer, err := ptrace.Attach(proc)
-	if err != nil {
-		panic(err)
-	}
 	for {
 		status := syscall.WaitStatus(0)
 		_, err := syscall.Wait4(proc.Pid, &status, syscall.WSTOPPED, &rusage)
@@ -88,7 +87,6 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 		}
 		if status.Exited() {
 			fmt.Println("exit")
-			fmt.Println(rusage.Stime)
 			return &runningObject
 		}
 		if status.CoreDump() {
@@ -108,25 +106,45 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
 				if runningObject.Time > runningObject.TimeLimit {
 					runningObject.Status = TLE
+					err := runningObject.Proc.Kill()
+					if err != nil {
+						panic(err)
+					}
 					return &runningObject
 				}
 				realTime := realTime(runningObject.Proc.Pid)
 				if realTime > runningObject.TimeLimit {
 					runningObject.Status = TLE
+					err := runningObject.Proc.Kill()
+					if err != nil {
+						panic(err)
+					}
 					return &runningObject
 				}
 				vs := virtualMemory(runningObject.Proc.Pid)
 				if vs/1000 > runningObject.MemoryLimit {
 					runningObject.Memory = vs / 1000
 					runningObject.Status = MLE
+					err := runningObject.Proc.Kill()
+					if err != nil {
+						panic(err)
+					}
 					return &runningObject
 				}
 			case syscall.SIGXCPU:
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
 				runningObject.Status = TLE
+				err := runningObject.Proc.Kill()
+				if err != nil {
+					panic(err)
+				}
 				return &runningObject
 			case syscall.SIGSEGV:
 				runningObject.Status = MLE
+				err := runningObject.Proc.Kill()
+				if err != nil {
+					panic(err)
+				}
 				return &runningObject
 			default:
 			}
