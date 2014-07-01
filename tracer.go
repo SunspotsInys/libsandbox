@@ -5,22 +5,32 @@ import (
 	"os"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/hjr265/ptrace.go/ptrace"
 )
 
 type RunningObject struct {
 	Time        syscall.Timeval
+	Proc        *os.Process
 	TimeLimit   int64
 	MemoryLimit int64
 	Memory      int64
+	Status      uint64
 }
 
 func (r *RunningObject) Millisecond() int64 {
 	return r.Time.Sec*1000 + r.Time.Usec/1000
 }
 
-func Run(src string, args []string) {
+func (r *RunningObject) RunTick(dur time.Duration) {
+	ticker := time.NewTicker(dur)
+	for _ = range ticker.C {
+		r.Proc.Signal(os.Signal(syscall.SIGALRM))
+	}
+}
+
+func Run(src string, args []string) *RunningObject {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	var rusage syscall.Rusage
@@ -32,6 +42,7 @@ func Run(src string, args []string) {
 	if err != nil {
 		panic(err)
 	}
+	runningObject.Proc = proc
 	//set CPU time limit
 	var rlimit syscall.Rlimit
 	rlimit.Cur = 1
@@ -39,14 +50,20 @@ func Run(src string, args []string) {
 	err = prLimit(proc.Pid, syscall.RLIMIT_CPU, &rlimit)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return &runningObject
 	}
-	rlimit.Cur = 100
+	go runningObject.RunTick(time.Second)
+	rlimit.Cur = 1024
 	rlimit.Max = 1024 + 1024
+	err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
+	if err != nil {
+		fmt.Println(err)
+		return &runningObject
+	}
 	err = prLimit(proc.Pid, syscall.RLIMIT_STACK, &rlimit)
 	if err != nil {
 		fmt.Println(err)
-		return
+		return &runningObject
 	}
 	tracer, err := ptrace.Attach(proc)
 	if err != nil {
@@ -61,33 +78,40 @@ func Run(src string, args []string) {
 		if status.Exited() {
 			fmt.Println("exit")
 			fmt.Println(rusage.Stime)
-			break
+			return &runningObject
 		}
 		if status.CoreDump() {
 			fmt.Println("CoreDump")
-			return
+			return &runningObject
 		}
 		if status.Continued() {
 			fmt.Println("Continued")
-			return
+			return &runningObject
 		}
 		if status.Signaled() {
-			return
+			return &runningObject
 		}
 		if status.Stopped() && status.StopSignal() != syscall.SIGTRAP {
 			switch status.StopSignal() {
+			case syscall.SIGALRM:
+				fmt.Println("SIGALRM")
+				runningObject.Time = rusage.Utime
+				fmt.Println(runningObject.Millisecond())
+				return &runningObject
 			case syscall.SIGXCPU:
 				fmt.Println("SIGXCPU")
 				runningObject.Time = rusage.Utime
 				fmt.Println(runningObject.Millisecond())
+				return &runningObject
 			case syscall.SIGSEGV:
 				fmt.Println("SIGSEGV")
 				runningObject.Memory = rusage.Minflt
 				fmt.Println(runningObject.Memory)
+				return &runningObject
 			default:
 				fmt.Println("default")
 			}
-			return
+			return &runningObject
 		} else {
 			regs, err := tracer.GetRegs()
 			if err != nil {
