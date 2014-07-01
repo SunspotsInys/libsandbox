@@ -26,6 +26,7 @@ func TestVmSize(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	defer proc.Kill()
 	time.Sleep(2)
 	vs := virtualMemory(proc.Pid)
 	if vs < 2048*100+40*1024 {

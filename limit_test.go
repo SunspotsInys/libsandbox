@@ -11,6 +11,7 @@ func TestCPULimit(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	defer proc.Kill()
 	var rlimit syscall.Rlimit
 	rlimit.Cur = 1
 	rlimit.Max = 2
