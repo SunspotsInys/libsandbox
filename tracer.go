@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/hjr265/ptrace.go/ptrace"
+	"github.com/ggaaooppeenngg/ptrace.go/ptrace"
 )
 
 const (
@@ -37,9 +37,11 @@ func (r *RunningObject) RunTick(dur time.Duration) {
 		r.Proc.Signal(os.Signal(syscall.SIGALRM))
 	}
 }
+
 func Complie(src string, des string, lan uint64) error {
 	return compile(src, des, lan)
 }
+
 func Run(src string, args []string, timeLimit int64, memoryLimit int64) *RunningObject {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
