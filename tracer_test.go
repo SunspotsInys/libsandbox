@@ -7,6 +7,7 @@ import (
 func TestTime(t *testing.T) {
 	obj := Run("/bin/sleep", []string{"sleep", "5"}, 1000, 10000)
 	if obj.Status != TLE {
+		t.Log(obj.Status)
 		t.Fatal("time exceed test failed.")
 	}
 }

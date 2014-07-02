@@ -71,9 +71,15 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 		fmt.Println(err)
 		return &runningObject
 	}
+
+	rlimit.Cur = uint64(memoryLimit) * 1024
+	rlimit.Max = uint64(memoryLimit) * 1024
+	err = prLimit(proc.Pid, syscall.RLIMIT_AS, &rlimit)
+	if err != nil {
+		fmt.Println(err)
+		return &runningObject
+	}
 	/*
-		rlimit.Cur = 1024
-		rlimit.Max = rlimit.Cur + 1024
 		err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
 		if err != nil {
 			fmt.Println(err)
@@ -85,6 +91,7 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 			return &runningObject
 		}
 	*/
+
 	for {
 		status := syscall.WaitStatus(0)
 		_, err := syscall.Wait4(proc.Pid, &status, syscall.WSTOPPED, &rusage)
