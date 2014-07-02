@@ -18,11 +18,22 @@ func TestCPULimit(t *testing.T) {
 	prLimit(proc.Pid, syscall.RLIMIT_CPU, &rlimit)
 	status, err := proc.Wait()
 	if status.Success() {
-		t.Log("cpu limit test failed")
+		t.Fatal("cpu limit test failed")
 	}
-	return
 }
 
 func TestMemoryLimit(t *testing.T) {
-	return
+	proc, err := os.StartProcess("test/memo", []string{"memo"}, &os.ProcAttr{})
+	if err != nil {
+		panic(err)
+	}
+	defer proc.Kill()
+	var rlimit syscall.Rlimit
+	rlimit.Cur = 10
+	rlimit.Max = 10 + 1024
+	prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
+	status, err := proc.Wait()
+	if status.Success() {
+		t.Fatal("memory test failed")
+	}
 }

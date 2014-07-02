@@ -37,7 +37,9 @@ func (r *RunningObject) RunTick(dur time.Duration) {
 		r.Proc.Signal(os.Signal(syscall.SIGALRM))
 	}
 }
-
+func Complie(src string, des string, lan uint64) error {
+	return compile(src, des, lan)
+}
 func Run(src string, args []string, timeLimit int64, memoryLimit int64) *RunningObject {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
@@ -60,25 +62,27 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 	go runningObject.RunTick(time.Millisecond)
 	//set CPU time limit
 	var rlimit syscall.Rlimit
-	rlimit.Cur = 2
-	rlimit.Max = 1 + 1
+	rlimit.Cur = uint64(timeLimit)
+	rlimit.Max = uint64(timeLimit)
 	err = prLimit(proc.Pid, syscall.RLIMIT_CPU, &rlimit)
 	if err != nil {
 		fmt.Println(err)
 		return &runningObject
 	}
-	rlimit.Cur = 1024
-	rlimit.Max = rlimit.Cur + 1024
-	err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
-	if err != nil {
-		fmt.Println(err)
-		return &runningObject
-	}
-	err = prLimit(proc.Pid, syscall.RLIMIT_STACK, &rlimit)
-	if err != nil {
-		fmt.Println(err)
-		return &runningObject
-	}
+	/*
+		rlimit.Cur = 1024
+		rlimit.Max = rlimit.Cur + 1024
+		err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
+		if err != nil {
+			fmt.Println(err)
+			return &runningObject
+		}
+		err = prLimit(proc.Pid, syscall.RLIMIT_STACK, &rlimit)
+		if err != nil {
+			fmt.Println(err)
+			return &runningObject
+		}
+	*/
 	for {
 		status := syscall.WaitStatus(0)
 		_, err := syscall.Wait4(proc.Pid, &status, syscall.WSTOPPED, &rusage)
