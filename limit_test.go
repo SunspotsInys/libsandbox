@@ -36,7 +36,6 @@ func TestMemoryLimit(t *testing.T) {
 	if status.Success() {
 		t.Fatal("memory test failed")
 	}
-	t.Log(status.String())
 	/*
 		proc, err = os.StartProcess("test/test", []string{"test"}, &os.ProcAttr{})
 		if err != nil {

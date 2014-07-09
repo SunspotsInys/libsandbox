@@ -3,6 +3,7 @@ package sandbox
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"runtime"
 	"syscall"
 	"time"
@@ -46,23 +47,21 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	var rusage syscall.Rusage
-	//var incall = true
 	var runningObject RunningObject
 	runningObject.TimeLimit = timeLimit
 	runningObject.MemoryLimit = memoryLimit
-	proc, err := os.StartProcess(src, args, &os.ProcAttr{Sys: &syscall.SysProcAttr{
-		Ptrace: true},
-	})
+	cmd := exec.Command(src, args...)
+	err := cmd.Start()
 	if err != nil {
 		panic(err)
 	}
+	proc := cmd.Process
 	tracer, err := ptrace.Attach(proc)
 	if err != nil {
 		panic(err)
 	}
 	runningObject.Proc = proc
 	go runningObject.RunTick(time.Millisecond)
-	//set CPU time limit
 	var rlimit syscall.Rlimit
 	rlimit.Cur = uint64(timeLimit)
 	rlimit.Max = uint64(timeLimit)
@@ -79,6 +78,7 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 		fmt.Println(err)
 		return &runningObject
 	}
+
 	/*
 		err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
 		if err != nil {
@@ -91,7 +91,6 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 			return &runningObject
 		}
 	*/
-
 	for {
 		status := syscall.WaitStatus(0)
 		_, err := syscall.Wait4(proc.Pid, &status, syscall.WSTOPPED, &rusage)
@@ -114,6 +113,7 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 			return &runningObject
 		}
 		if status.Stopped() && status.StopSignal() != syscall.SIGTRAP {
+			fmt.Println(status.StopSignal())
 			switch status.StopSignal() {
 			case syscall.SIGALRM:
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
