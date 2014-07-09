@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/codegangsta/cli"
@@ -8,10 +9,15 @@ import (
 )
 
 func checkStatus(obj *sandbox.RunningObject) {
-	if obj.Status == sandbox.AC {
-		os.Exit(0)
-	} else {
-		os.Exit(3)
+	switch obj.Status {
+	case sandbox.AC:
+		fmt.Printf("AC")
+	case sandbox.MLE:
+		fmt.Printf("MLE")
+	case sandbox.TLE:
+		fmt.Printf("TLE")
+	case sandbox.WA:
+		fmt.Printf("WA")
 	}
 }
 
@@ -29,11 +35,10 @@ func main() {
 	app.Action = func(c *cli.Context) {
 		if len(c.Args()) == 2 {
 			time := int64(c.Int("time"))
-			//			println(time)
 			memory := int64(c.Int("memory"))
 			if c.String("lang") == "c" {
 				if err := sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.C); err != nil {
-					println(err.Error())
+					fmt.Printf("CE")
 					os.Exit(2)
 				} else {
 					obj := sandbox.Run(c.Args()[1], []string{"tmp"}, time, memory)
@@ -42,7 +47,7 @@ func main() {
 			}
 			if c.String("lang") == "cpp" {
 				if err := sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.CPP); err != nil {
-					println(err.Error())
+					fmt.Printf("CE")
 					os.Exit(2)
 				} else {
 					obj := sandbox.Run(c.Args()[1], []string{"tmp"}, time, memory)
@@ -51,7 +56,7 @@ func main() {
 			}
 			if c.String("lang") == "go" {
 				if err := sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.GO); err != nil {
-					println(err.Error())
+					fmt.Printf("CE")
 					os.Exit(2)
 				} else {
 					obj := sandbox.Run(c.Args()[1], []string{"tmp"}, time, memory)

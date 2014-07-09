@@ -1,3 +1,6 @@
 test/
 !test/*.go
 !test/*.c
+tmp/
+dockerbox/Dockerfile
+go1.3.linux-amd64.tar.gz
