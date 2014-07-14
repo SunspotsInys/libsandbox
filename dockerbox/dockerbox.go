@@ -6,15 +6,16 @@ import (
 	"strings"
 
 	"code.google.com/p/go-uuid/uuid"
-	"github.com/ggaaooppeenngg/sandbox"
 	"github.com/ggaaooppeenngg/util"
 )
 
-func uuPath(lang int64) (id, path string) {
+func uuPath(lang string) (id, path string) {
 	ui := uuid.NewUUID()
 	uid := strings.Replace(ui.String(), "-", "", -1)
-	if lang == sandbox.GO {
+	if lang == "go" {
 		return uid, uid + ".go"
+	} else {
+		return "", ""
 	}
 }
 
