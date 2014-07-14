@@ -53,7 +53,7 @@ func test(id, path string) []byte {
 	}
 
 	//build
-	cmd = exec.Command("docker", "run", "--name="+id, id, "/home/GoPath/bin/sandbox", "--lang=go", "/home/"+path, "/home/"+id)
+	cmd = exec.Command("docker", "run", "-i", "--name="+id, id, "/home/GoPath/bin/sandbox", "--lang=go", "/home/"+path, "/home/"+id)
 	outs, err = cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("%s", outs)
