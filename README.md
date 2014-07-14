@@ -20,8 +20,8 @@ see tracer\_test.go and other test files for Public funtion usage
 $ cd $GOPATH/github.com/ggaaooppeenngg/sandbox/sandbox
 $ go install
 
-sandbox --lang=go main.go main
-$?
+echo "1 2" | sandbox --lang=c test/a+b.c test/a+b
+3
 ```
 
 ###with docker
