@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 
 	"github.com/codegangsta/cli"
 	"github.com/ggaaooppeenngg/sandbox"
@@ -36,12 +37,17 @@ func main() {
 		if len(c.Args()) == 2 {
 			time := int64(c.Int("time"))
 			memory := int64(c.Int("memory"))
+			pwd, err := os.Getwd()
+			if err != nil {
+				panic(err)
+			}
+			src := path.Join(pwd, c.Args()[1])
 			if c.String("lang") == "c" {
 				if err := sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.C); err != nil {
 					fmt.Printf("CE")
 					os.Exit(2)
 				} else {
-					obj := sandbox.Run(c.Args()[1], []string{"tmp"}, time, memory)
+					obj := sandbox.Run(src, []string{"tmp"}, time, memory)
 					checkStatus(obj)
 				}
 			}
@@ -50,7 +56,7 @@ func main() {
 					fmt.Printf("CE")
 					os.Exit(2)
 				} else {
-					obj := sandbox.Run(c.Args()[1], []string{"tmp"}, time, memory)
+					obj := sandbox.Run(src, []string{"tmp"}, time, memory)
 					checkStatus(obj)
 				}
 			}
@@ -59,7 +65,7 @@ func main() {
 					fmt.Printf("CE")
 					os.Exit(2)
 				} else {
-					obj := sandbox.Run(c.Args()[1], []string{"tmp"}, time, memory)
+					obj := sandbox.Run(src, []string{"tmp"}, time, memory)
 					checkStatus(obj)
 				}
 			}

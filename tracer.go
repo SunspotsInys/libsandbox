@@ -51,6 +51,8 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 	runningObject.TimeLimit = timeLimit
 	runningObject.MemoryLimit = memoryLimit
 	cmd := exec.Command(src, args...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
@@ -98,7 +100,7 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 			panic(err)
 		}
 		if status.Exited() {
-			fmt.Println("exit")
+			//fmt.Println("exit")
 			return &runningObject
 		}
 		if status.CoreDump() {
@@ -113,7 +115,7 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 			return &runningObject
 		}
 		if status.Stopped() && status.StopSignal() != syscall.SIGTRAP {
-			fmt.Println(status.StopSignal())
+			//fmt.Println(status.StopSignal())
 			switch status.StopSignal() {
 			case syscall.SIGALRM:
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
