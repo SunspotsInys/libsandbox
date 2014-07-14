@@ -28,15 +28,14 @@ echo "1 2" | sandbox --lang=c test/a+b.c test/a+b
 
 ```
 
-docker run ubuntu/sandbox /home/GoPath/bin/sandbox
+echo "1 2" |  docker run ubuntu/sandbox /home/GoPath/bin/sandbox
 
 ```
+###retuen
 
-if exit is not 0, it exceeds limit.
-//TODO:define relate exit code with specific limitation
+//TODO:define relate exit code with specific error
 
 ##test:
 
 run `./test.sh`
 
-//TODO:rlimit RLIMIT_AS test doesn't signal but exit ,going to deal with it.
