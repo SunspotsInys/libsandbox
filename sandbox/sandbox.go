@@ -45,7 +45,6 @@ func main() {
 			if c.String("lang") == "c" {
 				if err := sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.C); err != nil {
 					fmt.Printf("CE")
-					os.Exit(2)
 				} else {
 					obj := sandbox.Run(src, []string{"tmp"}, time, memory)
 					checkStatus(obj)
@@ -54,7 +53,6 @@ func main() {
 			if c.String("lang") == "cpp" {
 				if err := sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.CPP); err != nil {
 					fmt.Printf("CE")
-					os.Exit(2)
 				} else {
 					obj := sandbox.Run(src, []string{"tmp"}, time, memory)
 					checkStatus(obj)
@@ -63,7 +61,6 @@ func main() {
 			if c.String("lang") == "go" {
 				if err := sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.GO); err != nil {
 					fmt.Printf("CE")
-					os.Exit(2)
 				} else {
 					obj := sandbox.Run(src, []string{"tmp"}, time, memory)
 					checkStatus(obj)
@@ -71,7 +68,6 @@ func main() {
 			}
 		} else {
 			println("miss input source file and output destination")
-			os.Exit(1)
 		}
 	}
 	app.Run(os.Args)

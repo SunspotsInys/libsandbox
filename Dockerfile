@@ -11,20 +11,20 @@ MAINTAINER ggaaooppeenngg,gaopeg01@gmail.com
 
 
 #install newest golang
-#ENV  PATH   /home/go/bin
 ADD  go1.3.linux-amd64.tar.gz  /home/
 RUN  mkdir  /home/GoPath
 ENV  GOPATH /home/GoPath
 ENV  GOROOT /home/go
+ENV  PATH   /home/go/bin:$PATH
 RUN  mkdir  /usr/local/go
 
-RUN  cp -r /home/go/* /usr/local/go
+#RUN  cp -r /home/go/* /usr/local/go
 
 RUN  apt-get install -y --force-yes git
 RUN  apt-get install -y --force-yes  gcc
 RUN  apt-get install -y --force-yes  g++
-RUN  /home/go/bin/go get -v github.com/codegangsta/cli
-RUN  /home/go/bin/go get -v github.com/ggaaooppeenngg/sandbox
-RUN  /home/go/bin/go install /home/GoPath/src/github.com/ggaaooppeenngg/sandbox/sandbox
+RUN  go get -v github.com/codegangsta/cli
+RUN  go get -v github.com/ggaaooppeenngg/sandbox
+RUN  go install github.com/ggaaooppeenngg/sandbox/sandbox
 
 

@@ -21,7 +21,6 @@ func uuPath(lang string) (id, path string) {
 
 //use command sed repleace SRCFILE to real source file
 func genDocFile(path string) error {
-	fmt.Println(path)
 	out, err := util.Run("sed", "s/SRCFILE/"+path+"/g", "Seedfile")
 	if err != nil {
 		fmt.Printf("%s", out)
@@ -66,6 +65,6 @@ func test(id, path string) []byte {
 }
 
 func main() {
-	res := test("test1234", "test1234.go")
-	fmt.Printf("%s", res)
+	test("test1234", "test1234.go")
+	//fmt.Printf("%s", res)
 }
