@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
@@ -43,7 +44,7 @@ func Complie(src string, des string, lan uint64) error {
 	return compile(src, des, lan)
 }
 
-func Run(src string, args []string, timeLimit int64, memoryLimit int64) *RunningObject {
+func Run(src string, reader io.Reader, writer io.Writer, args []string, timeLimit int64, memoryLimit int64) *RunningObject {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	var rusage syscall.Rusage
@@ -51,8 +52,8 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 	runningObject.TimeLimit = timeLimit
 	runningObject.MemoryLimit = memoryLimit
 	cmd := exec.Command(src, args...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
+	cmd.Stdin = reader
+	cmd.Stdout = writer
 	err := cmd.Start()
 	if err != nil {
 		panic(err)
@@ -73,6 +74,7 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 		return &runningObject
 	}
 	/*
+		get "no such process" error when add AS limit
 		rlimit.Cur = uint64(memoryLimit) * 1024
 		rlimit.Max = uint64(memoryLimit) * 1024
 		err = prLimit(proc.Pid, syscall.RLIMIT_AS, &rlimit)
@@ -100,7 +102,6 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 			panic(err)
 		}
 		if status.Exited() {
-			//fmt.Println("exit")
 			return &runningObject
 		}
 		if status.CoreDump() {
@@ -112,10 +113,10 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 			return &runningObject
 		}
 		if status.Signaled() {
+			fmt.Println("signal")
 			return &runningObject
 		}
 		if status.Stopped() && status.StopSignal() != syscall.SIGTRAP {
-			//fmt.Println(status.StopSignal())
 			switch status.StopSignal() {
 			case syscall.SIGALRM:
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
@@ -163,36 +164,8 @@ func Run(src string, args []string, timeLimit int64, memoryLimit int64) *Running
 				return &runningObject
 			default:
 			}
-		} /* else {
-			regs, err := tracer.GetRegs()
-			if err != nil {
-				panic(err)
-			}
-			if regs.Orig_rax == syscall.SYS_WRITE {
-				if incall {
-					incall = false
-
-					_, err = tracer.GetRegs()
-					if err != nil {
-						panic(err)
-					}
-					fmt.Printf("The child made a system call with, %d,%d,%d \n", regs.Rdi, regs.Rsi, regs.Rdx)
-				} else {
-					incall = true
-					regs, err := tracer.GetRegs()
-					if err != nil {
-						panic(err)
-					}
-					fmt.Printf("write returned %v\n", regs.Rax)
-					fmt.Printf("call %d\n", regs.Rdi)
-				}
-			}
 		}
-		*/
 		//0表示不发出信号
-		err = tracer.Syscall(syscall.Signal(0))
-		if err != nil {
-			fmt.Println(err)
-		}
+		tracer.Syscall(syscall.Signal(0))
 	}
 }
