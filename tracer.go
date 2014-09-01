@@ -28,8 +28,8 @@ type RunningObject struct {
 	Proc        *os.Process
 	TimeLimit   int64
 	MemoryLimit int64
-	Memory      int64
-	Time        int64
+	Memory      int64 //KB
+	Time        int64 //MS
 	Status      uint64
 }
 
@@ -119,6 +119,8 @@ func Run(src string, reader io.Reader, writer io.Writer, args []string, timeLimi
 		if status.Stopped() && status.StopSignal() != syscall.SIGTRAP {
 			switch status.StopSignal() {
 			case syscall.SIGALRM:
+				vs := virtualMemory(runningObject.Proc.Pid)
+				runningObject.Memory = vs / 1000
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
 				if runningObject.Time > runningObject.TimeLimit {
 					runningObject.Status = TLE
@@ -137,9 +139,7 @@ func Run(src string, reader io.Reader, writer io.Writer, args []string, timeLimi
 					}
 					return &runningObject
 				}
-				vs := virtualMemory(runningObject.Proc.Pid)
 				if vs/1000 > runningObject.MemoryLimit {
-					runningObject.Memory = vs / 1000
 					runningObject.Status = MLE
 					err := runningObject.Proc.Kill()
 					if err != nil {
@@ -148,6 +148,8 @@ func Run(src string, reader io.Reader, writer io.Writer, args []string, timeLimi
 					return &runningObject
 				}
 			case syscall.SIGXCPU:
+				vs := virtualMemory(runningObject.Proc.Pid)
+				runningObject.Memory = vs / 1000
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
 				runningObject.Status = TLE
 				err := runningObject.Proc.Kill()
@@ -156,6 +158,9 @@ func Run(src string, reader io.Reader, writer io.Writer, args []string, timeLimi
 				}
 				return &runningObject
 			case syscall.SIGSEGV:
+				vs := virtualMemory(runningObject.Proc.Pid)
+				runningObject.Memory = vs / 1000
+				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
 				runningObject.Status = MLE
 				err := runningObject.Proc.Kill()
 				if err != nil {

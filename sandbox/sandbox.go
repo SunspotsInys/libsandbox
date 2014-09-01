@@ -14,28 +14,28 @@ import (
 func checkStatus(obj *sandbox.RunningObject) {
 	switch obj.Status {
 	case sandbox.AC:
-		fmt.Printf("AC")
+		fmt.Printf("AC:%d:%d", obj.Memory, obj.Time)
 	case sandbox.MLE:
-		fmt.Printf("MLE")
+		fmt.Printf("MLE:%d:%d", obj.Memory, obj.Time)
 	case sandbox.TLE:
-		fmt.Printf("TLE")
+		fmt.Printf("TLE:%d:%d", obj.Memory, obj.Time)
 	case sandbox.WA:
-		fmt.Printf("WA")
+		fmt.Printf("WA:%d:%d", obj.Memory, obj.Time)
 	default:
-		fmt.Printf("FE")
+		fmt.Printf("FE:%d:%d", obj.Memory, obj.Time)
 	}
 }
 
 func main() {
 	app := cli.NewApp()
 	app.Name = "sandbox"
-	app.Usage = "test untrused source code"
+	app.Usage = "test untrused source code,result format 'status:time:memory'"
 	app.Author = "ggaaooppeenngg"
-	app.Version = "0.0.1"
+	app.Version = "0.0.2"
 	app.Flags = []cli.Flag{
-		cli.StringFlag{"lang", "c,cpp,go", "source code languge"},
-		cli.IntFlag{"time", 1000, "time limit in MS"},
-		cli.IntFlag{"memory", 10000, "memory limit in KB"},
+		cli.StringFlag{Name: "lang", Value: "c,cpp,go", Usage: "source code languge"},
+		cli.IntFlag{Name: "time", Value: 1000, Usage: "time limit in MS"},
+		cli.IntFlag{Name: "memory", Value: 10000, Usage: "memory limit in KB"},
 	}
 	app.Action = func(c *cli.Context) {
 		if len(c.Args()) >= 2 {
@@ -63,7 +63,7 @@ func main() {
 			var obj = &sandbox.RunningObject{}
 			if c.String("lang") == "c" {
 				if err = sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.C); err != nil {
-					fmt.Printf("CE")
+					fmt.Printf("CE:0:0")
 					return
 				} else {
 					obj = sandbox.Run(src, in, &out, []string{"tmp"}, time, memory)
@@ -72,7 +72,7 @@ func main() {
 			}
 			if c.String("lang") == "cpp" {
 				if err = sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.CPP); err != nil {
-					fmt.Printf("CE")
+					fmt.Printf("CE:0:0")
 					return
 				} else {
 					obj = sandbox.Run(src, in, &out, []string{"tmp"}, time, memory)
@@ -81,7 +81,7 @@ func main() {
 			}
 			if c.String("lang") == "go" {
 				if err = sandbox.Complie(c.Args()[0], c.Args()[1], sandbox.GO); err != nil {
-					fmt.Printf("CE")
+					fmt.Printf("CE:0:0")
 					return
 				} else {
 					obj = sandbox.Run(src, in, &out, []string{"tmp"}, time, memory)
@@ -103,13 +103,13 @@ func main() {
 					testOut = append(testOut, tmp[:n]...)
 				}
 				if bytes.Equal(out.Bytes(), testOut) {
-					fmt.Printf("AC")
+					fmt.Printf("AC:%d:%d", obj.Memory, obj.Time)
 					return
 				}
 			}
 			checkStatus(obj)
 		} else {
-			println("miss input source file and output destination")
+			println("miss input source file and output destination,please use -h to help.")
 		}
 	}
 	app.Run(os.Args)
