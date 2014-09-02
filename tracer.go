@@ -44,14 +44,14 @@ func Complie(src string, des string, lan uint64) error {
 	return compile(src, des, lan)
 }
 
-func Run(src string, reader io.Reader, writer io.Writer, args []string, timeLimit int64, memoryLimit int64) *RunningObject {
+func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimit int64, memoryLimit int64) *RunningObject {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	var rusage syscall.Rusage
 	var runningObject RunningObject
 	runningObject.TimeLimit = timeLimit
 	runningObject.MemoryLimit = memoryLimit
-	cmd := exec.Command(src, args...)
+	cmd := exec.Command(bin, args...)
 	cmd.Stdin = reader
 	cmd.Stdout = writer
 	err := cmd.Start()
