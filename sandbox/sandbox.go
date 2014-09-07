@@ -66,10 +66,10 @@ func main() {
 	app.Usage = `test untrusted source code'
 example:
 	sandbox --lang=c -c -s src/main.c -b bin/main --memory=10000 --time=1000 --input=judge/input --output==judge/output
-	sandbox --lang=c bin/main --input=judge/input --output=judge/output
+	sandbox --lang=c -b bin/main -i judge/input -o judge/output
 	echo "input" | sandbox --lang=c  bin/main 
 result:
-	status:time:memory`
+	status:time:memory:times`
 	app.Author = "ggaaooppeenngg"
 	app.Version = "0.0.2"
 	app.Flags = []cli.Flag{
