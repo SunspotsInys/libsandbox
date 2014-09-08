@@ -102,7 +102,8 @@ example:
 			cmd.Stdin = input
 			o, e := cmd.CombinedOutput()
 			if e != nil {
-				panic(e)
+				//fmt.Printf("%s", o)
+				//panic(e)
 			}
 			outputs = append(outputs, o)
 		}

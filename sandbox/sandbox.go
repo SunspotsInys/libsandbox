@@ -52,8 +52,6 @@ func checkStatus(obj *sandbox.RunningObject, n int) {
 		fmt.Printf("MLE:%d:%d:%d", obj.Memory, obj.Time, n)
 	case sandbox.TLE:
 		fmt.Printf("TLE:%d:%d:%d", obj.Memory, obj.Time, n)
-	case sandbox.WA:
-		fmt.Printf("WA:%d:%d:%d", obj.Memory, obj.Time, n)
 	default:
 		fmt.Printf("FE:%d:%d:%d", obj.Memory, obj.Time, n)
 	}
@@ -83,13 +81,18 @@ result:
 		cli.StringFlag{Name: "binary,b", Value: "", Usage: "binary file path"},
 	}
 	app.Action = func(c *cli.Context) {
-		var in *os.File //input file instance
-		var src string  // source file path
-		var bin string  //binary file path
+		var in *os.File  //input file instance
+		var out *os.File //output file instance
+		var src string   // source file path
+		var bin string   //binary file path
 		var err error
 		pwd, err := os.Getwd()
 		if err != nil {
 			panic(err)
+		}
+		if c.String(LANG) == "" {
+			println("needs to specify a language")
+			return
 		}
 		//target binary file path is neccessary
 		if c.String(BINARY) != "" {
@@ -125,6 +128,13 @@ result:
 				println("compiler needs source file!")
 				return
 			} else {
+				//get source file path
+				p := c.String(SOURCE)
+				if path.IsAbs(p) {
+					src = p
+				} else {
+					src = path.Join(pwd, p)
+				}
 				//compile code ,if compile set , not compile
 				if c.Bool(COMPILE) {
 					var language uint64
@@ -148,33 +158,44 @@ result:
 		time := int64(c.Int(TIME))
 		memory := int64(c.Int(MEMORY))
 		if c.String(OUTPUT) != "" {
+			//get out test and check if every output matches the single input
+			outPath := c.String(OUTPUT)
+			if !path.IsAbs(outPath) {
+				outPath = path.Join(pwd, outPath)
+			}
+			out, err = os.Open(outPath)
+		} else {
+			out, err = os.Open(os.DevNull)
+
+		}
+		if err != nil {
+			panic(err)
+		}
+		defer out.Close()
+		//form a  scope
+		if c.String(OUTPUT) != "" {
+
 			//get input tests and run every test one by one
 			i := readFile(in)
 			inputs := bytes.Split(i, []byte(DELIM))
-			//get out test and check if every output matches the single input
-			outPath := c.String(OUTPUT)
-			//get output
-			out, err := os.Open(outPath)
-			if err != nil {
-				panic(err)
-			}
-			defer out.Close()
 			o := readFile(out)
 			outputs := bytes.Split(o, []byte(DELIM))
 			for i, v := range inputs {
 				inBytes := bytes.NewBuffer(v)
 				out := bytes.Buffer{}
-				o := sandbox.Run(bin, inBytes, &out, []string{""}, time, memory)
-				if bytes.Equal(out.Bytes(), outputs[i]) {
-					obj.Time += o.Time
-					obj.Memory += o.Memory
-				} else {
-					checkStatus(o, i)
+				obj = sandbox.Run(bin, inBytes, &out, []string{""}, time, memory)
+				if !bytes.Equal(out.Bytes(), outputs[i]) {
+					fmt.Printf("WA:%d:%d:%d", obj.Memory, obj.Time, i+1)
+					return
 				}
 			}
+		} else {
+			out := bytes.Buffer{}
+			in := bytes.NewBuffer([]byte{})
+			obj = sandbox.Run(bin, in, &out, []string{""}, time, memory)
 		}
-
 		checkStatus(obj, 0)
+		return
 	}
 	app.Run(os.Args)
 }

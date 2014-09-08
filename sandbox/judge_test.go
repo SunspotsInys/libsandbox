@@ -8,20 +8,21 @@ import (
 )
 
 func TestJudgeAPlusB(t *testing.T) {
-	cmd := exec.Command("sandbox", "--lang=c", "-c", "judge/src/A1/a+b.c", "judge/binary/A1/a+b", "judge/src/A1/input", "judge/src/A1/output")
+	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A1/a+b.c", "-b", "judge/binary/A1/a+b", "-i", "judge/src/A1/input", "-o", "judge/src/A1/output")
 	out, _ := cmd.CombinedOutput()
 	//t.Logf("%s", out)
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
 	status := results[0]
 	if status != "AC" {
+		t.Logf("%s", out)
 		t.Fatal("wrong answer")
 	}
 
 }
 func TestJudgeWithoutCompiling(t *testing.T) {
 	//run without compiling
-	cmd := exec.Command("sandbox", "--lang=c", "judge/binary/A1/a+b", "judge/src/A1/input", "judge/src/A1/output")
+	cmd := exec.Command("sandbox", "--lang=c", "-b", "judge/binary/A1/a+b", "-i", "judge/src/A1/input", "-o", "judge/src/A1/output")
 	out, _ := cmd.CombinedOutput()
 	t.Logf("%s", out)
 	result := fmt.Sprintf("%s", out)
@@ -33,17 +34,30 @@ func TestJudgeWithoutCompiling(t *testing.T) {
 		t.Fatal("wrong answer")
 	}
 }
+func TestNTimesAPlusB(t *testing.T) {
+	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A3/main.c", "-b", "judge/binary/A3/tmp", "-i", "judge/src/A3/input", "-o", "judge/src/A3/output")
+	out, _ := cmd.CombinedOutput()
+	t.Logf("%s", out)
+	result := fmt.Sprintf("%s", out)
+	results := strings.Split(result, ":")
+	status := results[0]
+	nth := results[3]
+	if status != "WA" || nth != "2" {
+		t.Fatal("wrong answer")
+	}
+
+}
 
 func TestTimeLimit(t *testing.T) {
-	cmd := exec.Command("sandbox", "--lang=c", "-c", "judge/src/A2/main.c", "judge/binary/A2/main")
+	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A2/main.c", "-b", "judge/binary/A2/main")
 	out, _ := cmd.CombinedOutput()
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
 	status := results[0]
 	time := results[1]
 	memory := results[2]
-	t.Logf("%s", out)
 	if status != "TLE" || time == "0" || memory == "0" {
+		t.Logf("%s", out)
 		t.Fatal("wrong answer")
 	}
 }
