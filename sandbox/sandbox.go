@@ -63,11 +63,15 @@ func main() {
 	app.Name = "sandbox"
 	app.Usage = `test untrusted source code'
 example:
+	compile before running
 	sandbox --lang=c -c -s src/main.c -b bin/main --memory=10000 --time=1000 --input=judge/input --output==judge/output
+	running without compile
 	sandbox --lang=c -b bin/main -i judge/input -o judge/output
-	echo "input" | sandbox --lang=c  bin/main 
+	if input or output not set, use /dev/null instead
+	sandbox --lang=c -b bin/main 
 result:
-	status:time:memory:times`
+	output fllows the order below,if result is wrong answer,5th argument will be attached.
+	status:time:memory:times:wrong_answer`
 	app.Author = "ggaaooppeenngg"
 	app.Version = "0.0.2"
 	app.Flags = []cli.Flag{
@@ -185,7 +189,7 @@ result:
 				out := bytes.Buffer{}
 				obj = sandbox.Run(bin, inBytes, &out, []string{""}, time, memory)
 				if !bytes.Equal(out.Bytes(), outputs[i]) {
-					fmt.Printf("WA:%d:%d:%d", obj.Memory, obj.Time, i+1)
+					fmt.Printf("WA:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
 					return
 				}
 			}

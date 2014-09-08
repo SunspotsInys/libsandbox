@@ -20,18 +20,20 @@ see tracer\_test.go and other test files for Public funtion usage
 $ cd $GOPATH/github.com/ggaaooppeenngg/sandbox/sandbox
 $ go install
 
-echo "1 2" | sandbox --lang=c test/a+b.c test/a+b
-3
+```
+###Usage:
+```
+sandbox -h
+
 ```
 
 ###with docker
 
 ```
-//TODO
+//TODO:
+wrap with docker util the sandbox is stable
 
 ```
-
-//TODO:define relate exit code with specific error
 
 ##test:
 
