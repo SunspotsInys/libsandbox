@@ -151,7 +151,7 @@ result:
 						language = sandbox.GO
 					}
 					if err = sandbox.Complie(src, bin, language); err != nil {
-						fmt.Printf("CE:0:0")
+						fmt.Printf("CE:0:0:0")
 						return
 					}
 				}
