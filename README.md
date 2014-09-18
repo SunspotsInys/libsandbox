@@ -31,7 +31,11 @@ sandbox -h
 
 ```
 //TODO:
-wrap with docker util the sandbox is stable
+1. produce more detail status(runtime error, presentation error, outputlimit error)
+
+2. wrap with docker util the sandbox is stable
+
+3. check out illegal system call to feedback errors 
 
 ```
 
