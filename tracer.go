@@ -53,6 +53,7 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 	runningObject.MemoryLimit = memoryLimit
 	cmd := exec.Command(bin, args...)
 	cmd.Stdin = reader
+	cmd.Stderr = writer
 	cmd.Stdout = writer
 	err := cmd.Start()
 	if err != nil {
@@ -84,16 +85,16 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 		}
 
 		/*
-			err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
-			if err != nil {
-				fmt.Println(err)
-				return &runningObject
-			}
-			err = prLimit(proc.Pid, syscall.RLIMIT_STACK, &rlimit)
-			if err != nil {
-				fmt.Println(err)
-				return &runningObject
-			}
+		err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
+		if err != nil {
+			fmt.Println(err)
+			return &runningObject
+		}
+		err = prLimit(proc.Pid, syscall.RLIMIT_STACK, &rlimit)
+		if err != nil {
+			fmt.Println(err)
+			return &runningObject
+		}
 	*/
 	for {
 		status := syscall.WaitStatus(0)
@@ -161,7 +162,7 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 				vs := virtualMemory(runningObject.Proc.Pid)
 				runningObject.Memory = vs / 1000
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
-				runningObject.Status = MLE
+				runningObject.Status = RE
 				err := runningObject.Proc.Kill()
 				if err != nil {
 					panic(err)

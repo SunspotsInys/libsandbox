@@ -11,6 +11,7 @@ import (
 	"github.com/ggaaooppeenngg/sandbox"
 )
 
+//表现更多的错误内容
 const (
 	BINARY  = "binary"
 	COMPILE = "compile"
@@ -52,7 +53,10 @@ func checkStatus(obj *sandbox.RunningObject, n int) {
 		fmt.Printf("MLE:%d:%d:%d", obj.Memory, obj.Time, n)
 	case sandbox.TLE:
 		fmt.Printf("TLE:%d:%d:%d", obj.Memory, obj.Time, n)
+	//case sandbox.RE:
+	//	fmt.Printf("RE:%d:%d:%d", obj.Memory, obj.Time, n)
 	default:
+		//格式错误
 		fmt.Printf("FE:%d:%d:%d", obj.Memory, obj.Time, n)
 	}
 }
@@ -95,7 +99,7 @@ result:
 			panic(err)
 		}
 		if c.String(LANG) == "" {
-			println("needs to specify a language")
+			println("needs to specify a language,use tag -h for help")
 			return
 		}
 		//target binary file path is neccessary
@@ -107,7 +111,7 @@ result:
 				bin = path.Join(pwd, p)
 			}
 		} else {
-			println("needs target binary file path as argument")
+			println("needs target binary file path as argument,user tag -h for help")
 			return
 		}
 
@@ -189,7 +193,11 @@ result:
 				out := bytes.Buffer{}
 				obj = sandbox.Run(bin, inBytes, &out, []string{""}, time, memory)
 				if !bytes.Equal(out.Bytes(), outputs[i]) {
-					fmt.Printf("WA:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
+					if obj.Status == sandbox.RE {
+						fmt.Printf("RE:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
+					} else {
+						fmt.Printf("WA:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
+					}
 					return
 				}
 			}
