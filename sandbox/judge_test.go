@@ -7,18 +7,32 @@ import (
 	"testing"
 )
 
+func TestPresentationError(t *testing.T) {
+	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A7/main.c", "-b", "judge/binary/A7/main", "-i", "judge/src/A7/input", "-o", "judge/src/A7/output")
+	out, _ := cmd.CombinedOutput()
+	result := fmt.Sprintf("%s", out)
+	results := strings.Split(result, ":")
+	status := results[0]
+	if status != "FE" {
+		t.Logf("%s", status)
+		t.Logf("%s", out)
+		t.Fatal("Test Presentation Error Failed")
+	}
+}
+
+/*
 func TestSegmentfault(t *testing.T) {
 	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A6/main.c", "-b", "judge/binary/A6/main", "-i", "judge/src/A6/input", "-o", "judge/src/A6/output")
 	out, _ := cmd.CombinedOutput()
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
 	status := results[0]
+	fmt.Printf("%s\n", out)
 	if status != "RE" {
 		t.Logf("%s", out)
 		t.Fatal("wrong answer")
 	}
 }
-
 func TestJudgeAPlusB(t *testing.T) {
 	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A1/a+b.c", "-b", "judge/binary/A1/a+b", "-i", "judge/src/A1/input", "-o", "judge/src/A1/output")
 	out, _ := cmd.CombinedOutput()
@@ -73,3 +87,4 @@ func TestTimeLimit(t *testing.T) {
 		t.Fatal("wrong answer")
 	}
 }
+*/

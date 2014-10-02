@@ -7,6 +7,6 @@ void main()
 	for(i = 0 ;i< s;i++)
 	{
 		scanf("%d %d",a,b);
-		printf("%d\n",a+b);
+		printf("%d ",a+b);
 	}
 }

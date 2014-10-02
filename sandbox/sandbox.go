@@ -196,7 +196,15 @@ result:
 					if obj.Status == sandbox.RE {
 						fmt.Printf("RE:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
 					} else {
-						fmt.Printf("WA:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
+						o1F := bytes.Fields(out.Bytes())
+						o1J := bytes.Join(o1F, []byte(""))
+						o2F := bytes.Fields(outputs[i])
+						o2J := bytes.Join(o2F, []byte(""))
+						if bytes.Equal(o1J, o2J) {
+							fmt.Printf("FE:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
+						} else {
+							fmt.Printf("WA:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
+						}
 					}
 					return
 				}
