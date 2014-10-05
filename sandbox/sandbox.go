@@ -27,6 +27,8 @@ const (
 	GO  = "go"
 
 	DELIM = "!-_-\n"
+
+	OUTPUT_LIMIT = 10000
 )
 
 func panicErr(e error) {
@@ -45,20 +47,21 @@ func readFile(f *os.File) (testOut []byte) {
 }
 
 //obj records process information and n is the nth test,if n is 0 ,all test are passed
-func checkStatus(obj *sandbox.RunningObject, n int) {
+func checkStatus(obj *sandbox.RunningObject, n int) (hasErr bool) {
 	switch obj.Status {
-	case sandbox.AC:
-		fmt.Printf("AC:%d:%d:%d", obj.Memory, obj.Time, n)
 	case sandbox.MLE:
 		fmt.Printf("MLE:%d:%d:%d", obj.Memory, obj.Time, n)
+		hasErr = true
 	case sandbox.TLE:
 		fmt.Printf("TLE:%d:%d:%d", obj.Memory, obj.Time, n)
-	//case sandbox.RE:
-	//	fmt.Printf("RE:%d:%d:%d", obj.Memory, obj.Time, n)
+		hasErr = true
+	case sandbox.RE:
+		fmt.Printf("RE:%d:%d:%d", obj.Memory, obj.Time, n)
+		hasErr = true
 	default:
-		//格式错误
-		fmt.Printf("FE:%d:%d:%d", obj.Memory, obj.Time, n)
+		hasErr = false
 	}
+	return hasErr
 }
 
 func main() {
@@ -66,14 +69,14 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "sandbox"
 	app.Usage = `test untrusted source code'
-example:
+	example:
 	compile before running
 	sandbox --lang=c -c -s src/main.c -b bin/main --memory=10000 --time=1000 --input=judge/input --output==judge/output
 	running without compile
 	sandbox --lang=c -b bin/main -i judge/input -o judge/output
 	if input or output not set, use /dev/null instead
 	sandbox --lang=c -b bin/main 
-result:
+	result:
 	output fllows the order below,if result is wrong answer,5th argument will be attached.
 	status:time:memory:times:wrong_answer`
 	app.Author = "ggaaooppeenngg"
@@ -192,19 +195,22 @@ result:
 				inBytes := bytes.NewBuffer(v)
 				out := bytes.Buffer{}
 				obj = sandbox.Run(bin, inBytes, &out, []string{""}, time, memory)
+				if checkStatus(obj, 0) {
+					return
+				}
+				if len(out.Bytes()) > OUTPUT_LIMIT {
+					fmt.Printf("OL:%d:%d:%d", obj.Memory, obj.Time, i+1)
+					return
+				}
 				if !bytes.Equal(out.Bytes(), outputs[i]) {
-					if obj.Status == sandbox.RE {
-						fmt.Printf("RE:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
+					o1F := bytes.Fields(out.Bytes())
+					o1J := bytes.Join(o1F, []byte(""))
+					o2F := bytes.Fields(outputs[i])
+					o2J := bytes.Join(o2F, []byte(""))
+					if bytes.Equal(o1J, o2J) {
+						fmt.Printf("FE:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
 					} else {
-						o1F := bytes.Fields(out.Bytes())
-						o1J := bytes.Join(o1F, []byte(""))
-						o2F := bytes.Fields(outputs[i])
-						o2J := bytes.Join(o2F, []byte(""))
-						if bytes.Equal(o1J, o2J) {
-							fmt.Printf("FE:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
-						} else {
-							fmt.Printf("WA:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
-						}
+						fmt.Printf("WA:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
 					}
 					return
 				}
@@ -213,8 +219,12 @@ result:
 			out := bytes.Buffer{}
 			in := bytes.NewBuffer([]byte{})
 			obj = sandbox.Run(bin, in, &out, []string{""}, time, memory)
+			if checkStatus(obj, 0) {
+				return
+			}
 		}
-		checkStatus(obj, 0)
+		//if there is no problem for all checks
+		fmt.Printf("AC:%d:%d:%d", obj.Memory, obj.Time, 0)
 		return
 	}
 	app.Run(os.Args)

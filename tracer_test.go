@@ -1,29 +1,33 @@
 package sandbox
 
 import (
+	"os"
 	"testing"
 )
 
 func TestTime(t *testing.T) {
-	obj := Run("/bin/sleep", []string{"5"}, 1000, 10000)
-	//t.Log(obj.Status)
+	obj := Run("/bin/sleep", os.Stdin, os.Stdout, []string{"5"}, 1000, 20000)
 	if obj.Status != TLE {
+		t.Log(obj.Status)
+		t.Log(obj.Memory)
+		t.Log(obj.Time)
 		t.Fatal("time exceed test failed.")
 	}
 }
 
 func TestCPUTime(t *testing.T) {
-	obj := Run("test/time", []string{""}, 1000, 10000)
-	//t.Log(obj.Status)
+	obj := Run("test/time", os.Stdin, os.Stdout, []string{""}, 1000, 10000)
 	if obj.Status != TLE {
+		t.Log(obj.Status)
 		t.Fatal("time exceed test failed")
 	}
 }
 
 func TestMemory(t *testing.T) {
-	obj := Run("test/memo", []string{""}, 1000, 10000)
-	//t.Log(obj.Status)
+	obj := Run("test/memo", os.Stdin, os.Stdout, []string{""}, 1000, 10000)
 	if obj.Status != MLE {
+		t.Log(obj.Status)
+		t.Log(obj.Time)
 		t.Fatal("memory exceed test failed")
 	}
 }

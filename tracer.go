@@ -65,7 +65,7 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 		panic(err)
 	}
 	runningObject.Proc = proc
-	go runningObject.RunTick(time.Millisecond)
+	go runningObject.RunTick(time.Nanosecond)
 	var rlimit syscall.Rlimit
 	rlimit.Cur = uint64(timeLimit)
 	rlimit.Max = uint64(timeLimit)
@@ -134,6 +134,7 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 				realTime := realTime(runningObject.Proc.Pid)
 				if realTime > runningObject.TimeLimit {
 					runningObject.Status = TLE
+					runningObject.Time = realTime
 					err := runningObject.Proc.Kill()
 					if err != nil {
 						panic(err)

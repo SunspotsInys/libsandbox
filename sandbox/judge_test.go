@@ -20,19 +20,18 @@ func TestPresentationError(t *testing.T) {
 	}
 }
 
-/*
 func TestSegmentfault(t *testing.T) {
 	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A6/main.c", "-b", "judge/binary/A6/main", "-i", "judge/src/A6/input", "-o", "judge/src/A6/output")
 	out, _ := cmd.CombinedOutput()
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
 	status := results[0]
-	fmt.Printf("%s\n", out)
 	if status != "RE" {
 		t.Logf("%s", out)
 		t.Fatal("wrong answer")
 	}
 }
+
 func TestJudgeAPlusB(t *testing.T) {
 	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A1/a+b.c", "-b", "judge/binary/A1/a+b", "-i", "judge/src/A1/input", "-o", "judge/src/A1/output")
 	out, _ := cmd.CombinedOutput()
@@ -57,6 +56,7 @@ func TestJudgeWithoutCompiling(t *testing.T) {
 	time := results[1]
 	memory := results[2]
 	if status != "AC" || time != "0" || memory != "0" {
+		t.Logf("time %d memory %d", time, memory)
 		t.Fatal("wrong answer")
 	}
 }
@@ -86,5 +86,15 @@ func TestTimeLimit(t *testing.T) {
 		t.Logf("%s", out)
 		t.Fatal("wrong answer")
 	}
+	cmd = exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A8/main.c", "-b", "judge/binary/A8/main", "-i", "judge/src/A8/input", "-o", "judge/src/A8/output")
+	out, _ = cmd.CombinedOutput()
+	result = fmt.Sprintf("%s", out)
+	results = strings.Split(result, ":")
+	status = results[0]
+	time = results[1]
+	memory = results[2]
+	if status != "TLE" || time == "0" {
+		t.Logf("%s", out)
+		t.Fatal("wrong answer")
+	}
 }
-*/
