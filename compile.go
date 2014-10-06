@@ -14,7 +14,7 @@ func compile(src string, des string, lan uint64) error {
 	var cmd = new(exec.Cmd)
 	switch lan {
 	case C:
-		cmd = exec.Command("gcc", "-o", des, src)
+		cmd = exec.Command("gcc", "-o", des, src, "-lm")
 	case CPP:
 		cmd = exec.Command("g++", "-o", des, src)
 	case GO:
