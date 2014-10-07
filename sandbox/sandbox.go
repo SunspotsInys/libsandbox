@@ -28,7 +28,7 @@ const (
 
 	DELIM = "!-_-\n"
 
-	OUTPUT_LIMIT = 10000
+	OUTPUT_LIMIT = 255
 )
 
 func panicErr(e error) {
