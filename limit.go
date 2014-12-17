@@ -1,12 +1,13 @@
 package sandbox
 
 import (
-	"syscall"
 	"unsafe"
+
+	"golang.org/x/sys/unix"
 )
 
-func prLimit(pid int, limit uintptr, rlimit *syscall.Rlimit) error {
-	_, _, errno := syscall.RawSyscall6(syscall.SYS_PRLIMIT64, uintptr(pid), limit, uintptr(unsafe.Pointer(rlimit)), 0, 0, 0)
+func prLimit(pid int, limit uintptr, rlimit *unix.Rlimit) error {
+	_, _, errno := unix.RawSyscall6(unix.SYS_PRLIMIT64, uintptr(pid), limit, uintptr(unsafe.Pointer(rlimit)), 0, 0, 0)
 	var err error
 	if errno != 0 {
 		err = errno

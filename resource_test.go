@@ -2,6 +2,7 @@ package sandbox
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 	"time"
 )
@@ -20,15 +21,15 @@ func TestRealTime(t *testing.T) {
 }
 
 func TestVmSize(t *testing.T) {
-	proc, err := os.StartProcess("test/main", []string{"test"}, &os.ProcAttr{})
+	cmd := exec.Command("test/memo")
+	err := cmd.Start()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	defer proc.Kill()
-	time.Sleep(2)
-	vs := virtualMemory(proc.Pid)
-	if vs < 2048*100+40*1024 {
-		t.Fatal("real vmSize error")
+	var pid = cmd.Process.Pid
+	time.Sleep(time.Second)
+	vs := virtualMemory(pid)
+	if vs < 10000*1024 {
+		t.Fatalf("current virtual memory %d KB is smaller than 10000KB", vs/1024)
 	}
-
 }

@@ -32,7 +32,14 @@ func virtualMemory(pid int) int64 {
 		panic(err)
 	}
 	//virtual memory size is 23nd paramater in the stat file
+	/*
+		ss := strings.Split(string(bs), " ")
+		for i, v := range ss {
+			fmt.Printf("%d :%s\n", i+1, v)
+		}
+	*/
 	vmSize, err := strconv.ParseInt(strings.Split(string(bs), " ")[22], 10, 64)
+
 	if err != nil {
 		panic(err)
 	}

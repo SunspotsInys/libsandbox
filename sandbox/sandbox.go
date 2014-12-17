@@ -50,10 +50,10 @@ func readFile(f *os.File) (testOut []byte) {
 func checkStatus(obj *sandbox.RunningObject, n int) (hasErr bool) {
 	switch obj.Status {
 	case sandbox.MLE:
-		fmt.Printf("MLE:%d:%d:%d", obj.Memory, obj.Time, n)
+		fmt.Printf("ML:%d:%d:%d", obj.Memory, obj.Time, n)
 		hasErr = true
 	case sandbox.TLE:
-		fmt.Printf("TLE:%d:%d:%d", obj.Memory, obj.Time, n)
+		fmt.Printf("TL:%d:%d:%d", obj.Memory, obj.Time, n)
 		hasErr = true
 	case sandbox.RE:
 		fmt.Printf("RE:%d:%d:%d", obj.Memory, obj.Time, n)

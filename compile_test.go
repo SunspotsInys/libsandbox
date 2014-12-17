@@ -24,5 +24,9 @@ func TestCompile(t *testing.T) {
 		t.Log(err)
 		t.Fatal("c compile failed")
 	}
-	compile("test/time.c", "test/time", C)
+	err = compile("test/time.c", "test/time", C)
+	if err != nil || !util.IsExist("test/time") {
+		t.Log(err)
+		t.Fatal("c compile failed")
+	}
 }

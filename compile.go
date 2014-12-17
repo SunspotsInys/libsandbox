@@ -10,10 +10,12 @@ const (
 	GO
 )
 
+//default comiple options
 func compile(src string, des string, lan uint64) error {
 	var cmd = new(exec.Cmd)
 	switch lan {
 	case C:
+		//-lm for gcc math link option
 		cmd = exec.Command("gcc", "-o", des, src, "-lm")
 	case CPP:
 		cmd = exec.Command("g++", "-o", des, src)
@@ -25,5 +27,4 @@ func compile(src string, des string, lan uint64) error {
 	} else {
 		return nil
 	}
-
 }

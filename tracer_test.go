@@ -8,8 +8,7 @@ import (
 func TestTime(t *testing.T) {
 	obj := Run("/bin/sleep", os.Stdin, os.Stdout, []string{"5"}, 1000, 20000)
 	if obj.Status != TLE {
-		t.Log(obj.Status)
-		t.Log(obj.Memory)
+		t.Log(status[obj.Status])
 		t.Log(obj.Time)
 		t.Fatal("time exceed test failed.")
 	}
@@ -18,7 +17,7 @@ func TestTime(t *testing.T) {
 func TestCPUTime(t *testing.T) {
 	obj := Run("test/time", os.Stdin, os.Stdout, []string{""}, 1000, 10000)
 	if obj.Status != TLE {
-		t.Log(obj.Status)
+		t.Log(status[obj.Status])
 		t.Fatal("time exceed test failed")
 	}
 }
@@ -26,8 +25,8 @@ func TestCPUTime(t *testing.T) {
 func TestMemory(t *testing.T) {
 	obj := Run("test/memo", os.Stdin, os.Stdout, []string{""}, 1000, 10000)
 	if obj.Status != MLE {
-		t.Log(obj.Status)
-		t.Log(obj.Time)
+		t.Log(status[obj.Status])
+		t.Log(obj.Memory)
 		t.Fatal("memory exceed test failed")
 	}
 }

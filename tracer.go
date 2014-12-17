@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/ggaaooppeenngg/ptrace.go/ptrace"
+
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -24,6 +26,19 @@ const (
 	SE
 )
 
+//for debug
+var status = map[uint64]string{
+	AC:  "Accept",
+	PE:  "Presentation Error",
+	TLE: "Time Limit Error",
+	MLE: "Memory Limit Error",
+	WA:  "Wrong Answer",
+	RE:  "Runtime Error",
+	OLE: "Output Limit Error",
+	CE:  "Compile Error",
+	SE:  "Segmentfault Error",
+}
+
 type RunningObject struct {
 	Proc        *os.Process
 	TimeLimit   int64
@@ -36,7 +51,7 @@ type RunningObject struct {
 func (r *RunningObject) RunTick(dur time.Duration) {
 	ticker := time.NewTicker(dur)
 	for _ = range ticker.C {
-		r.Proc.Signal(os.Signal(syscall.SIGALRM))
+		r.Proc.Signal(os.Signal(unix.SIGALRM))
 	}
 }
 
@@ -47,7 +62,7 @@ func Complie(src string, des string, lan uint64) error {
 func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimit int64, memoryLimit int64) *RunningObject {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
-	var rusage syscall.Rusage
+	var rusage unix.Rusage
 	var runningObject RunningObject
 	runningObject.TimeLimit = timeLimit
 	runningObject.MemoryLimit = memoryLimit
@@ -66,10 +81,10 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 	}
 	runningObject.Proc = proc
 	go runningObject.RunTick(time.Nanosecond)
-	var rlimit syscall.Rlimit
+	var rlimit unix.Rlimit
 	rlimit.Cur = uint64(timeLimit)
 	rlimit.Max = uint64(timeLimit)
-	err = prLimit(proc.Pid, syscall.RLIMIT_CPU, &rlimit)
+	err = prLimit(proc.Pid, unix.RLIMIT_CPU, &rlimit)
 	if err != nil {
 		fmt.Println(err)
 		return &runningObject
@@ -97,8 +112,8 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 		}
 	*/
 	for {
-		status := syscall.WaitStatus(0)
-		_, err := syscall.Wait4(proc.Pid, &status, syscall.WSTOPPED, &rusage)
+		status := unix.WaitStatus(0)
+		_, err := unix.Wait4(proc.Pid, &status, unix.WSTOPPED, &rusage)
 		if err != nil {
 			panic(err)
 		}
@@ -117,9 +132,9 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 			fmt.Println("signal")
 			return &runningObject
 		}
-		if status.Stopped() && status.StopSignal() != syscall.SIGTRAP {
+		if status.Stopped() && status.StopSignal() != unix.SIGTRAP {
 			switch status.StopSignal() {
-			case syscall.SIGALRM:
+			case unix.SIGALRM:
 				vs := virtualMemory(runningObject.Proc.Pid)
 				runningObject.Memory = vs / 1000
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
@@ -149,7 +164,7 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 					}
 					return &runningObject
 				}
-			case syscall.SIGXCPU:
+			case unix.SIGXCPU:
 				vs := virtualMemory(runningObject.Proc.Pid)
 				runningObject.Memory = vs / 1000
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
@@ -159,7 +174,7 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 					panic(err)
 				}
 				return &runningObject
-			case syscall.SIGSEGV:
+			case unix.SIGSEGV:
 				vs := virtualMemory(runningObject.Proc.Pid)
 				runningObject.Memory = vs / 1000
 				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
