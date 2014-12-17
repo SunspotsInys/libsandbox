@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
 
-	"github.com/codegangsta/cli"
 	"github.com/ggaaooppeenngg/sandbox"
+
+	"github.com/codegangsta/cli"
 )
 
-//表现更多的错误内容
+//render more information
 const (
 	BINARY  = "binary"
 	COMPILE = "compile"
@@ -33,7 +35,7 @@ const (
 
 func panicErr(e error) {
 	if e != nil {
-		fmt.Println(e)
+		log.Println(e)
 	}
 }
 
@@ -47,16 +49,16 @@ func readFile(f *os.File) (testOut []byte) {
 }
 
 //obj records process information and n is the nth test,if n is 0 ,all test are passed
-func checkStatus(obj *sandbox.RunningObject, n int) (hasErr bool) {
+func checkStatus(obj *sandbox.RunningObject, nTh int) (hasErr bool) {
 	switch obj.Status {
 	case sandbox.MLE:
-		fmt.Printf("ML:%d:%d:%d", obj.Memory, obj.Time, n)
+		fmt.Printf("ML:%d:%d:%d:", obj.Memory, obj.Time, nTh)
 		hasErr = true
 	case sandbox.TLE:
-		fmt.Printf("TL:%d:%d:%d", obj.Memory, obj.Time, n)
+		fmt.Printf("TL:%d:%d:%d:", obj.Memory, obj.Time, nTh)
 		hasErr = true
 	case sandbox.RE:
-		fmt.Printf("RE:%d:%d:%d", obj.Memory, obj.Time, n)
+		fmt.Printf("RE:%d:%d:%d:", obj.Memory, obj.Time, nTh)
 		hasErr = true
 	default:
 		hasErr = false
@@ -70,39 +72,49 @@ func main() {
 	app.Name = "sandbox"
 	app.Usage = `test untrusted source code'
 	example:
-	compile before running
-	sandbox --lang=c -c -s src/main.c -b bin/main --memory=10000 --time=1000 --input=judge/input --output==judge/output
+	compile before running with -c option
+	sandbox --lang=c -c -s src/main.c -b bin/main --memory=10000 --time=1000 --input=judge/input --output=judge/output
 	running without compile
 	sandbox --lang=c -b bin/main -i judge/input -o judge/output
 	if input or output not set, use /dev/null instead
 	sandbox --lang=c -b bin/main 
+    note: input file and output file is splited by flag "!-_-\n"
 	result:
-	output fllows the order below,if result is wrong answer,5th argument will be attached.
-	status:time:memory:times:wrong_answer`
+	output fllows the format,if result is wrong answer,5th argument will be attached.
+    do not gurantee no more ':' appears
+	status(error or AC):time(MS):memory(KB):times(int):wrong_answer(string)`
+
 	app.Author = "ggaaooppeenngg"
-	app.Version = "0.0.2"
+	app.Version = "0.0.3"
+	app.Email = "gaopeg01@gmail.com"
 	app.Flags = []cli.Flag{
-		cli.StringFlag{Name: "lang,l", Value: "c,cpp,go", Usage: "source code languge"},
-		cli.IntFlag{Name: "time,t", Value: 1000, Usage: "time limit in MS"},
-		cli.IntFlag{Name: "memory,m", Value: 10000, Usage: "memory limit in KB"},
-		cli.BoolFlag{Name: "compile,c", Usage: "wether complie before running", EnvVar: ""},
-		cli.StringFlag{Name: "input,i", Value: "", Usage: "input file path"},
-		cli.StringFlag{Name: "output,o", Value: "", Usage: "output file path"},
-		cli.StringFlag{Name: "source,s", Value: "", Usage: "source file path"},
-		cli.StringFlag{Name: "binary,b", Value: "", Usage: "binary file path"},
+		cli.StringFlag{Name: "lang,l", Value: "c,cpp,go",
+			Usage: "source code languge"},
+		cli.IntFlag{Name: "time,t", Value: 1000,
+			Usage: "time limit in MS"},
+		cli.IntFlag{Name: "memory,m", Value: 10000,
+			Usage: "memory limit in KB"},
+		cli.BoolFlag{Name: "compile,c",
+			Usage: "wether complie before running", EnvVar: ""},
+		cli.StringFlag{Name: "input,i", Value: "",
+			Usage: "input file path"},
+		cli.StringFlag{Name: "output,o", Value: "",
+			Usage: "output file path"},
+		cli.StringFlag{Name: "source,s", Value: "",
+			Usage: "source file path"},
+		cli.StringFlag{Name: "binary,b", Value: "",
+			Usage: "binary file path"},
 	}
 	app.Action = func(c *cli.Context) {
 		var in *os.File  //input file instance
 		var out *os.File //output file instance
-		var src string   // source file path
+		var src string   //source file path
 		var bin string   //binary file path
 		var err error
 		pwd, err := os.Getwd()
-		if err != nil {
-			panic(err)
-		}
+		panicErr(err)
 		if c.String(LANG) == "" {
-			println("needs to specify a language,use tag -h for help")
+			fmt.Println("Needs a specified language,use tag -h for help")
 			return
 		}
 		//target binary file path is neccessary
@@ -114,7 +126,8 @@ func main() {
 				bin = path.Join(pwd, p)
 			}
 		} else {
-			println("needs target binary file path as argument,user tag -h for help")
+			fmt.Println("Needs target binary file" +
+				" path as argument,user tag -h for help")
 			return
 		}
 
@@ -129,14 +142,12 @@ func main() {
 				in, err = os.Open(path.Join(pwd, p))
 			}
 		}
-		if err != nil {
-			panic(err)
-		}
+		panicErr(err)
 		defer in.Close()
 
 		if c.Bool(COMPILE) {
 			if c.String(SOURCE) == "" {
-				println("compiler needs source file!")
+				fmt.Println("compiler needs source file!")
 				return
 			} else {
 				//get source file path
@@ -158,7 +169,7 @@ func main() {
 						language = sandbox.GO
 					}
 					if err = sandbox.Complie(src, bin, language); err != nil {
-						fmt.Printf("CE:0:0:0")
+						fmt.Printf("CE:0:0:0:")
 						return
 					}
 				}
@@ -179,9 +190,7 @@ func main() {
 			out, err = os.Open(os.DevNull)
 
 		}
-		if err != nil {
-			panic(err)
-		}
+		panicErr(err)
 		defer out.Close()
 		//form a  scope
 		if c.String(OUTPUT) != "" {
@@ -199,7 +208,7 @@ func main() {
 					return
 				}
 				if len(out.Bytes()) > OUTPUT_LIMIT {
-					fmt.Printf("OL:%d:%d:%d", obj.Memory, obj.Time, i+1)
+					fmt.Printf("OL:%d:%d:%d:", obj.Memory, obj.Time, i+1)
 					return
 				}
 				if !bytes.Equal(out.Bytes(), outputs[i]) {
@@ -208,9 +217,17 @@ func main() {
 					o2F := bytes.Fields(outputs[i])
 					o2J := bytes.Join(o2F, []byte(""))
 					if bytes.Equal(o1J, o2J) {
-						fmt.Printf("FE:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
+						fmt.Printf("FE:%d:%d:%d:%s",
+							obj.Memory,
+							obj.Time,
+							i+1, //0 represent no error
+							out.Bytes())
 					} else {
-						fmt.Printf("WA:%d:%d:%d:%s", obj.Memory, obj.Time, i+1, out.Bytes())
+						fmt.Printf("WA:%d:%d:%d:%s",
+							obj.Memory,
+							obj.Time,
+							i+1, //o represent no error
+							out.Bytes())
 					}
 					return
 				}
@@ -218,13 +235,14 @@ func main() {
 		} else {
 			out := bytes.Buffer{}
 			in := bytes.NewBuffer([]byte{})
-			obj = sandbox.Run(bin, in, &out, []string{""}, time, memory)
+			obj = sandbox.Run(bin, in, &out,
+				[]string{""}, time, memory)
 			if checkStatus(obj, 0) {
 				return
 			}
 		}
 		//if there is no problem for all checks
-		fmt.Printf("AC:%d:%d:%d", obj.Memory, obj.Time, 0)
+		fmt.Printf("AC:%d:%d:%d:", obj.Memory, obj.Time, 0)
 		return
 	}
 	app.Run(os.Args)

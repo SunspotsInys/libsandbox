@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 /*
@@ -14,14 +15,16 @@ import "C"
 
 var (
 	sc_clk_tck int64
-	//sc_page_size int64
+	frequency  time.Duration
 )
 
 func init() {
+	//timer click number per second
 	sc_clk_tck = int64(C.sysconf(C._SC_CLK_TCK))
-	//sc_page_size = int64(C.sysconf(C._SC_PAGE_SIZE))
+	frequency = time.Second / time.Duration(sc_clk_tck)
 }
 
+//get process virtual memory usage
 func virtualMemory(pid int) int64 {
 	stat, err := os.Open("/proc/" + strconv.Itoa(pid) + "/stat")
 	if err != nil {
@@ -31,13 +34,7 @@ func virtualMemory(pid int) int64 {
 	if err != nil {
 		panic(err)
 	}
-	//virtual memory size is 23nd paramater in the stat file
-	/*
-		ss := strings.Split(string(bs), " ")
-		for i, v := range ss {
-			fmt.Printf("%d :%s\n", i+1, v)
-		}
-	*/
+	//virtual memory size is 23nd paramater in the stat file,in bytes
 	vmSize, err := strconv.ParseInt(strings.Split(string(bs), " ")[22], 10, 64)
 
 	if err != nil {
@@ -46,6 +43,7 @@ func virtualMemory(pid int) int64 {
 	return vmSize
 }
 
+//return process running time from the start
 func realTime(pid int) int64 {
 	upTimeFile, err := os.Open("/proc/uptime")
 	if err != nil {

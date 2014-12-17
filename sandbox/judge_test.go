@@ -8,7 +8,10 @@ import (
 )
 
 func TestPresentationError(t *testing.T) {
-	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A7/main.c", "-b", "judge/binary/A7/main", "-i", "judge/src/A7/input", "-o", "judge/src/A7/output")
+	cmd := exec.Command("sandbox", "--lang=c",
+		"-c", "-s", "judge/src/A7/main.c", "-b",
+		"judge/binary/A7/main", "-i", "judge/src/A7/input",
+		"-o", "judge/src/A7/output")
 	out, _ := cmd.CombinedOutput()
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
@@ -21,7 +24,10 @@ func TestPresentationError(t *testing.T) {
 }
 
 func TestSegmentfault(t *testing.T) {
-	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A6/main.c", "-b", "judge/binary/A6/main", "-i", "judge/src/A6/input", "-o", "judge/src/A6/output")
+	cmd := exec.Command("sandbox", "--lang=c",
+		"-c", "-s", "judge/src/A6/main.c", "-b",
+		"judge/binary/A6/main", "-i", "judge/src/A6/input",
+		"-o", "judge/src/A6/output")
 	out, _ := cmd.CombinedOutput()
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
@@ -33,9 +39,11 @@ func TestSegmentfault(t *testing.T) {
 }
 
 func TestJudgeAPlusB(t *testing.T) {
-	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A1/a+b.c", "-b", "judge/binary/A1/a+b", "-i", "judge/src/A1/input", "-o", "judge/src/A1/output")
+	cmd := exec.Command("sandbox", "--lang=c",
+		"-c", "-s", "judge/src/A1/a+b.c", "-b",
+		"judge/binary/A1/a+b", "-i", "judge/src/A1/input",
+		"-o", "judge/src/A1/output")
 	out, _ := cmd.CombinedOutput()
-	//t.Logf("%s", out)
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
 	status := results[0]
@@ -47,21 +55,23 @@ func TestJudgeAPlusB(t *testing.T) {
 }
 func TestJudgeWithoutCompiling(t *testing.T) {
 	//run without compiling
-	cmd := exec.Command("sandbox", "--lang=c", "-b", "judge/binary/A1/a+b", "-i", "judge/src/A1/input", "-o", "judge/src/A1/output")
+	cmd := exec.Command("sandbox", "--lang=c",
+		"-b", "judge/binary/A1/a+b", "-i", "judge/src/A1/input",
+		"-o", "judge/src/A1/output")
 	out, _ := cmd.CombinedOutput()
 	t.Logf("%s", out)
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
 	status := results[0]
-	time := results[1]
-	memory := results[2]
-	if status != "AC" || time != "0" || memory != "0" {
-		t.Logf("time %d memory %d", time, memory)
+	if status != "AC" {
 		t.Fatal("wrong answer")
 	}
 }
 func TestNTimesAPlusB(t *testing.T) {
-	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A3/main.c", "-b", "judge/binary/A3/tmp", "-i", "judge/src/A3/input", "-o", "judge/src/A3/output")
+	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s",
+		"judge/src/A3/main.c", "-b", "judge/binary/A3/tmp",
+		"-i", "judge/src/A3/input",
+		"-o", "judge/src/A3/output")
 	out, _ := cmd.CombinedOutput()
 	t.Logf("%s", out)
 	result := fmt.Sprintf("%s", out)
@@ -75,25 +85,30 @@ func TestNTimesAPlusB(t *testing.T) {
 }
 
 func TestTimeLimit(t *testing.T) {
-	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A2/main.c", "-b", "judge/binary/A2/main")
+	cmd := exec.Command("sandbox", "--lang=c", "-c", "-s",
+		"judge/src/A2/main.c", "-b",
+		"judge/binary/A2/main")
 	out, _ := cmd.CombinedOutput()
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
 	status := results[0]
 	time := results[1]
 	memory := results[2]
-	if status != "TLE" || time == "0" || memory == "0" {
+	if status != "TL" || time == "0" || memory == "0" {
 		t.Logf("%s", out)
 		t.Fatal("wrong answer")
 	}
-	cmd = exec.Command("sandbox", "--lang=c", "-c", "-s", "judge/src/A8/main.c", "-b", "judge/binary/A8/main", "-i", "judge/src/A8/input", "-o", "judge/src/A8/output")
+	cmd = exec.Command("sandbox", "--lang=c", "-c", "-s",
+		"judge/src/A8/main.c", "-b",
+		"judge/binary/A8/main", "-i", "judge/src/A8/input",
+		"-o", "judge/src/A8/output")
 	out, _ = cmd.CombinedOutput()
 	result = fmt.Sprintf("%s", out)
 	results = strings.Split(result, ":")
 	status = results[0]
 	time = results[1]
 	memory = results[2]
-	if status != "TLE" || time == "0" {
+	if status != "TL" || time == "0" {
 		t.Logf("%s", out)
 		t.Fatal("wrong answer")
 	}

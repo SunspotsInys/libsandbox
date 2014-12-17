@@ -1,7 +1,10 @@
-test/
-!test/*.go
-!test/*.c
+*
+!.*c
+!.*go
+!.*cpp
+
 tmp/
 sandbox/judge/binary/A*/*
 dockerbox/Dockerfile
 go1.3.linux-amd64.tar.gz
+

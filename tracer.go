@@ -3,6 +3,7 @@ package sandbox
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"runtime"
@@ -24,6 +25,10 @@ const (
 	OLE
 	CE
 	SE
+)
+
+const (
+	KB = 1024
 )
 
 //for debug
@@ -48,18 +53,21 @@ type RunningObject struct {
 	Status      uint64
 }
 
-func (r *RunningObject) RunTick(dur time.Duration) {
-	ticker := time.NewTicker(dur)
+func (r *RunningObject) RunTick() {
+	ticker := time.NewTicker(frequency)
+	//send alarm signal with time tick frequency
 	for _ = range ticker.C {
 		r.Proc.Signal(os.Signal(unix.SIGALRM))
 	}
 }
 
+//wrap compile function
 func Complie(src string, des string, lan uint64) error {
 	return compile(src, des, lan)
 }
 
-func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimit int64, memoryLimit int64) *RunningObject {
+func Run(bin string, reader io.Reader, writer io.Writer,
+	args []string, timeLimit int64, memoryLimit int64) *RunningObject {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	var rusage unix.Rusage
@@ -80,7 +88,7 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 		panic(err)
 	}
 	runningObject.Proc = proc
-	go runningObject.RunTick(time.Nanosecond)
+	go runningObject.RunTick()
 	var rlimit unix.Rlimit
 	rlimit.Cur = uint64(timeLimit)
 	rlimit.Max = uint64(timeLimit)
@@ -89,31 +97,13 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 		fmt.Println(err)
 		return &runningObject
 	}
-	/*
-		get "no such process" error when add AS limit
-		rlimit.Cur = uint64(memoryLimit) * 1024
-		rlimit.Max = uint64(memoryLimit) * 1024
-		err = prLimit(proc.Pid, syscall.RLIMIT_AS, &rlimit)
-		if err != nil {
-			fmt.Println(err)
-			return &runningObject
-		}
-
-		/*
-		err = prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
-		if err != nil {
-			fmt.Println(err)
-			return &runningObject
-		}
-		err = prLimit(proc.Pid, syscall.RLIMIT_STACK, &rlimit)
-		if err != nil {
-			fmt.Println(err)
-			return &runningObject
-		}
-	*/
 	for {
 		status := unix.WaitStatus(0)
-		_, err := unix.Wait4(proc.Pid, &status, unix.WSTOPPED, &rusage)
+		//ptrace stopped
+		_, err := unix.Wait4(proc.Pid,
+			&status,
+			unix.WSTOPPED,
+			&rusage)
 		if err != nil {
 			panic(err)
 		}
@@ -132,13 +122,16 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 			fmt.Println("signal")
 			return &runningObject
 		}
-		if status.Stopped() && status.StopSignal() != unix.SIGTRAP {
+		if status.Stopped() &&
+			status.StopSignal() != unix.SIGTRAP {
 			switch status.StopSignal() {
 			case unix.SIGALRM:
 				vs := virtualMemory(runningObject.Proc.Pid)
-				runningObject.Memory = vs / 1000
-				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
-				if runningObject.Time > runningObject.TimeLimit {
+				runningObject.Memory = vs / KB
+				runningObject.Time = rusage.Utime.Sec*1000 +
+					rusage.Utime.Usec/1000
+				if runningObject.Time >
+					runningObject.TimeLimit {
 					runningObject.Status = TLE
 					err := runningObject.Proc.Kill()
 					if err != nil {
@@ -152,36 +145,39 @@ func Run(bin string, reader io.Reader, writer io.Writer, args []string, timeLimi
 					runningObject.Time = realTime
 					err := runningObject.Proc.Kill()
 					if err != nil {
-						panic(err)
+						log.Println(err)
 					}
 					return &runningObject
 				}
-				if vs/1000 > runningObject.MemoryLimit {
+				if vs/KB > runningObject.MemoryLimit {
 					runningObject.Status = MLE
 					err := runningObject.Proc.Kill()
 					if err != nil {
-						panic(err)
+						log.Println(err)
 					}
 					return &runningObject
 				}
 			case unix.SIGXCPU:
 				vs := virtualMemory(runningObject.Proc.Pid)
-				runningObject.Memory = vs / 1000
-				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
+				runningObject.Memory = vs / KB
+				runningObject.Time = rusage.Utime.Sec*1000 +
+					rusage.Utime.Usec/1000
 				runningObject.Status = TLE
 				err := runningObject.Proc.Kill()
 				if err != nil {
-					panic(err)
+					log.Println(err)
 				}
 				return &runningObject
 			case unix.SIGSEGV:
+				//if segmentfault
 				vs := virtualMemory(runningObject.Proc.Pid)
-				runningObject.Memory = vs / 1000
-				runningObject.Time = rusage.Utime.Sec*1000 + rusage.Utime.Usec/1000
+				runningObject.Memory = vs / KB
+				runningObject.Time = rusage.Utime.Sec*1000 +
+					rusage.Utime.Usec/1000
 				runningObject.Status = RE
 				err := runningObject.Proc.Kill()
 				if err != nil {
-					panic(err)
+					log.Println(err)
 				}
 				return &runningObject
 			default:

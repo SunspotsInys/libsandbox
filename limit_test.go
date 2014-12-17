@@ -14,8 +14,8 @@ func TestCPULimit(t *testing.T) {
 	}
 	defer proc.Kill()
 	var rlimit unix.Rlimit
-	rlimit.Cur = 1
-	rlimit.Max = 2
+	rlimit.Cur = 1000
+	rlimit.Max = 1000
 	prLimit(proc.Pid, unix.RLIMIT_CPU, &rlimit)
 	status, err := proc.Wait()
 	if status.Success() {
@@ -24,46 +24,20 @@ func TestCPULimit(t *testing.T) {
 }
 
 func TestMemoryLimit(t *testing.T) {
-	proc, err := os.StartProcess("test/memo", []string{"memo"}, &os.ProcAttr{})
-	if err != nil {
-		panic(err)
-	}
-	defer proc.Kill()
-	var rlimit unix.Rlimit
-	rlimit.Cur = 1024 * 9999
-	rlimit.Max = 1024 + 1024
-	prLimit(proc.Pid, unix.RLIMIT_AS, &rlimit)
-	status, err := proc.Wait()
-	if status.Success() {
-		t.Fatal("memory test failed")
-	}
-	/*
-		proc, err = os.StartProcess("test/test", []string{"test"}, &os.ProcAttr{})
-		if err != nil {
-			panic(err)
-		}
-		defer proc.Kill()
-		prLimit(proc.Pid, unix.RLIMIT_AS, &rlimit)
-		if status.Success() {
-			t.Fatal("memory sest failed")
-		}
-	*/
-}
-
-/*
-func TestMemoryDATALimit(t *testing.T) {
 	proc, err := os.StartProcess("test/test", []string{"test"}, &os.ProcAttr{})
 	if err != nil {
 		panic(err)
 	}
 	defer proc.Kill()
-	var rlimit syscall.Rlimit
-	rlimit.Cur = 1024
-	rlimit.Max = 1024 + 1024
-	prLimit(proc.Pid, syscall.RLIMIT_DATA, &rlimit)
+	var rlimit unix.Rlimit
+	rlimit.Cur = 1024 * 512
+	rlimit.Max = 1024 * 512
+	prLimit(proc.Pid, unix.RLIMIT_AS, &rlimit)
 	status, err := proc.Wait()
-	if status.Success() {
-		t.Fatal("memory test failed")
+	if err == nil || status.Success() {
+		if err == nil {
+			t.Log(err)
+		}
+		t.Fatal("memory sest failed")
 	}
 }
-*/
