@@ -1,3 +1,8 @@
+//Sandbox package is used for sandbox command.
+//
+//Sandbox uses /proc/{id}/stats to check virtual memory usage and,/proc/uptime for time run.
+//Every timer tick,send a signal to check the running status,if any erros happend kill the
+//process and report error,or check the standard input and output to report wrong answer or accept.
 package sandbox
 
 import (
@@ -16,19 +21,19 @@ import (
 )
 
 const (
-	AC uint64 = iota
-	PE
-	TLE
-	MLE
-	WA
-	RE
-	OLE
-	CE
-	SE
+	AC  uint64 = iota //Accept
+	PE                //Present Erro
+	TLE               //Time Limit Out Error
+	MLE               //Memory Limit Out Error
+	WA                //Wrong Answer
+	RE                //Runtime Error
+	OLE               //Output Limit Error
+	CE                //Complie Error
+	SE                //Segmenfault Error
 )
 
 const (
-	KB = 1024
+	KB = 1024 //KB==1024 bytes
 )
 
 //for debug
@@ -44,16 +49,17 @@ var status = map[uint64]string{
 	SE:  "Segmentfault Error",
 }
 
+//RunningObject is a process running information container.
 type RunningObject struct {
 	Proc        *os.Process
 	TimeLimit   int64
 	MemoryLimit int64
-	Memory      int64 //KB
-	Time        int64 //MS
-	Status      uint64
+	Memory      int64  //KB
+	Time        int64  //MS
+	Status      uint64 //result status
 }
 
-func (r *RunningObject) RunTick() {
+func (r *RunningObject) runTick() {
 	ticker := time.NewTicker(frequency)
 	//send alarm signal with time tick frequency
 	for _ = range ticker.C {
@@ -61,11 +67,14 @@ func (r *RunningObject) RunTick() {
 	}
 }
 
-//wrap compile function
+//Compile compiles specific language source file
+//and build into destination file.
 func Complie(src string, des string, lan uint64) error {
 	return compile(src, des, lan)
 }
 
+//Run runs the binary,and receive reader and writer for standard input and output,
+//args are the binary arguments,timeLimit and memoryLimit are in MS and KB.
 func Run(bin string, reader io.Reader, writer io.Writer,
 	args []string, timeLimit int64, memoryLimit int64) *RunningObject {
 	runtime.LockOSThread()
@@ -88,7 +97,7 @@ func Run(bin string, reader io.Reader, writer io.Writer,
 		panic(err)
 	}
 	runningObject.Proc = proc
-	go runningObject.RunTick()
+	go runningObject.runTick()
 	var rlimit unix.Rlimit
 	rlimit.Cur = uint64(timeLimit)
 	rlimit.Max = uint64(timeLimit)

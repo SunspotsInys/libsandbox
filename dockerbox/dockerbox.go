@@ -1,3 +1,4 @@
+//Dockerbox is sandbox wrapped with Docker
 package main
 
 import (

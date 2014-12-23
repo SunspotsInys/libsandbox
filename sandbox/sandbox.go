@@ -1,3 +1,14 @@
+//sandbox is command line interface for the Sandbox without docker wrapped.
+//  Example:
+//      compile before running
+//          sandbox --lang=c -c -s src/main.c -b bin/main --memory=10000 --time=1000 --input=judge/input --output==judge/output
+//      running without compiling
+//          sandbox --lang=c -b bin/main -i judge/input -o judge/output
+//      if input or output not set, use /dev/null instead
+//          sandbox --lang=c -b bin/main
+//      result:
+//          output fllows the order below,if result is wrong answer,5th argument will be attached.
+//          status:time:memory:times:wrong_answer
 package main
 
 import (
@@ -71,18 +82,18 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "sandbox"
 	app.Usage = `test untrusted source code'
-	example:
-	compile before running with -c option
-	sandbox --lang=c -c -s src/main.c -b bin/main --memory=10000 --time=1000 --input=judge/input --output=judge/output
-	running without compile
-	sandbox --lang=c -b bin/main -i judge/input -o judge/output
-	if input or output not set, use /dev/null instead
-	sandbox --lang=c -b bin/main 
+    example:
+    compile before running with -c option
+    sandbox --lang=c -c -s src/main.c -b bin/main --memory=10000 --time=1000 --input=judge/input --output=judge/output
+    running without compile
+    sandbox --lang=c -b bin/main -i judge/input -o judge/output
+    if input or output not set, use /dev/null instead
+    sandbox --lang=c -b bin/main 
     note: input file and output file is splited by flag "!-_-\n"
-	result:
-	output fllows the format,if result is wrong answer,5th argument will be attached.
+    result:
+    output fllows the format,if result is wrong answer,5th argument will be attached.
     do not gurantee no more ':' appears
-	status(error or AC):time(MS):memory(KB):times(int):wrong_answer(string)`
+    status(error or AC):time(MS):memory(KB):times(int):wrong_answer(string)`
 
 	app.Author = "ggaaooppeenngg"
 	app.Version = "0.0.3"

@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	C uint64 = iota
-	CPP
-	GO
+	C   uint64 = iota //C language
+	CPP               //C Plus Plus langua
+	GO                //Go language
 )
 
 //default comiple options
