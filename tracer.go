@@ -18,15 +18,16 @@ import (
 )
 
 const (
-	AC  uint64 = iota //Accept
-	PE                //Present Erro
-	TLE               //Time Limit Out Error
-	MLE               //Memory Limit Out Error
-	WA                //Wrong Answer
-	RE                //Runtime Error
-	OLE               //Output Limit Error
-	CE                //Complie Error
-	SE                //Segmenfault Error
+	AC  uint64 = iota // Accept
+	PE                // Present Erro
+	TLE               // Time Limit Out Error
+	MLE               // Memory Limit Out Error
+	WA                // Wrong Answer
+	RE                // Runtime Error
+	OLE               // Output Limit Error
+	CE                // Complie Error
+	SE                // Segmenfault Error
+	IOE               // IO Error(opening files)
 )
 
 const (
@@ -93,7 +94,7 @@ func (r *RunningObject) exceedLimit() uint64 {
 
 func wait(pid, options int, rusage *unix.Rusage) (int, *unix.WaitStatus, error) {
 	var status unix.WaitStatus
-	wpid, err := unix.Wait4(pid, &status, unix.WALL, rusage)
+	wpid, err := unix.Wait4(pid, &status, options, rusage)
 	return wpid, &status, err
 }
 
@@ -152,11 +153,11 @@ func Run(bin string, reader io.Reader, writer io.Writer,
 		if err != nil {
 			panic(err)
 		}
+
 		// status exited
 		if status.Exited() {
 			return &runningObject
 		}
-
 		if status.CoreDump() {
 			fmt.Println("CoreDump")
 			return &runningObject
@@ -181,6 +182,16 @@ func Run(bin string, reader io.Reader, writer io.Writer,
 			default:
 			}
 		}
+
+		reg, err := tracer.GetRegs()
+		if err != nil {
+			panic(err)
+		}
+		if reg.Orig_rax == unix.SYS_OPEN {
+			runningObject.Status = IOE
+			return &runningObject
+		}
+
 		//0表示不发出信号
 		tracer.Syscall(syscall.Signal(0))
 	}

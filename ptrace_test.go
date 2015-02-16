@@ -8,7 +8,7 @@ import (
 )
 
 func TestAttach(t *testing.T) {
-	proc, err := os.StartProcess("/usr/bin/sleep", []string{"sleep", "5"}, &os.ProcAttr{})
+	proc, err := os.StartProcess("/bin/sleep", []string{"sleep", "5"}, &os.ProcAttr{})
 	catch(err)
 
 	time.Sleep(1 * time.Nanosecond)
@@ -22,7 +22,7 @@ func TestAttach(t *testing.T) {
 }
 
 func TestAttachTwice(t *testing.T) {
-	proc, err := os.StartProcess("/usr/bin/sleep", []string{"sleep", "5"}, &os.ProcAttr{
+	proc, err := os.StartProcess("/bin/sleep", []string{"sleep", "5"}, &os.ProcAttr{
 		Sys: &syscall.SysProcAttr{
 			Ptrace: true,
 		},
@@ -40,7 +40,7 @@ func TestAttachTwice(t *testing.T) {
 }
 
 func TestGetRegs(t *testing.T) {
-	proc, err := os.StartProcess("/usr/bin/sleep", []string{"sleep", "5"}, &os.ProcAttr{})
+	proc, err := os.StartProcess("/bin/sleep", []string{"sleep", "5"}, &os.ProcAttr{})
 	catch(err)
 
 	time.Sleep(1 * time.Nanosecond)
@@ -57,16 +57,10 @@ func TestGetRegs(t *testing.T) {
 }
 
 func TestSyscall(t *testing.T) {
-	proc, err := os.StartProcess("/usr/bin/ls", []string{"ls", "/"}, &os.ProcAttr{
-		Sys: &syscall.SysProcAttr{
-			Ptrace: true,
-		},
-	})
+	proc, err := os.StartProcess("/bin/ls", []string{"ls", "/"}, &os.ProcAttr{})
 	catch(err)
-
-	time.Sleep(1 * time.Nanosecond)
-
 	tracer, err := Attach(proc)
+	proc.Wait()
 	catch(err)
 
 	for {

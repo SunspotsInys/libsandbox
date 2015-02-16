@@ -7,7 +7,6 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-/*
 func TestCPULimit(t *testing.T) {
 	proc, err := os.StartProcess("test/main", []string{"main"}, &os.ProcAttr{})
 	if err != nil {
@@ -15,7 +14,7 @@ func TestCPULimit(t *testing.T) {
 	}
 	defer proc.Kill()
 	var rlimit unix.Rlimit
-	rlimit.Cur = 1
+	rlimit.Cur = 1000
 	rlimit.Max = 1000
 	prLimit(proc.Pid, unix.RLIMIT_CPU, &rlimit)
 	status, err := proc.Wait()
@@ -23,7 +22,6 @@ func TestCPULimit(t *testing.T) {
 		t.Fatal("cpu limit test failed")
 	}
 }
-*/
 
 func TestMemoryLimit(t *testing.T) {
 	proc, err := os.StartProcess("test/test", []string{"test"}, &os.ProcAttr{})
@@ -34,7 +32,7 @@ func TestMemoryLimit(t *testing.T) {
 	var rlimit unix.Rlimit
 	rlimit.Cur = 1024 * 512
 	rlimit.Max = 1024 * 512
-	prLimit(proc.Pid, unix.RLIMIT_AS, &rlimit)
+	prLimit(proc.Pid, unix.RLIMIT_AS, &rlimit) // Address Space = virtual memory
 	status, err := proc.Wait()
 	if err == nil || status.Success() {
 		if err != nil {

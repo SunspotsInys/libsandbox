@@ -5,6 +5,13 @@ import (
 	"testing"
 )
 
+func TestIO(t *testing.T) {
+	r := Run("test/open", os.Stdin, os.Stdout, []string{""}, 1000, 2000)
+	if r.Status != IOE {
+		t.Fatal("IO test failed")
+	}
+}
+
 func TestTime(t *testing.T) {
 	obj := Run("/bin/sleep", os.Stdin, os.Stdout, []string{"5"}, 1000, 20000)
 	if obj.Status != TLE {
