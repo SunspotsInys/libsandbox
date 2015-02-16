@@ -8,14 +8,11 @@ package sandbox
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"runtime"
 	"syscall"
 	"time"
-
-	"github.com/ggaaooppeenngg/ptrace.go/ptrace"
 
 	"golang.org/x/sys/unix"
 )
@@ -49,7 +46,7 @@ var status = map[uint64]string{
 	SE:  "Segmentfault Error",
 }
 
-//RunningObject is a process running information container.
+// RunningObject is a process running information container.
 type RunningObject struct {
 	Proc        *os.Process
 	TimeLimit   int64
@@ -59,6 +56,7 @@ type RunningObject struct {
 	Status      uint64 //result status
 }
 
+// send signal SIGALRM to the process every tick.
 func (r *RunningObject) runTick() {
 	ticker := time.NewTicker(frequency)
 	//send alarm signal with time tick frequency
@@ -67,27 +65,62 @@ func (r *RunningObject) runTick() {
 	}
 }
 
-func init() {
+// update virtual memory.
+func (r *RunningObject) updateVirtualMemory() {
+	r.Memory = virtualMemory(r.Proc.Pid) / KB
+}
+
+// update time used from the max of rusage and the /porc/{pid}/stat
+func (r *RunningObject) updateTime(rusg *unix.Rusage) {
+	r.Time = rusg.Utime.Sec*1000 +
+		rusg.Utime.Usec/1000 // MS
+	rt := realTime(r.Proc.Pid)
+	if r.Time < rt {
+		r.Time = rt
+	}
+}
+
+// wether exceed resource limit
+func (r *RunningObject) exceedLimit() uint64 {
+	if r.Memory > r.MemoryLimit {
+		return MLE
+	}
+	if r.Time > r.TimeLimit {
+		return TLE
+	}
+	return 0
+}
+
+func wait(pid, options int, rusage *unix.Rusage) (int, *unix.WaitStatus, error) {
+	var status unix.WaitStatus
+	wpid, err := unix.Wait4(pid, &status, unix.WALL, rusage)
+	return wpid, &status, err
+}
+
+// Compile compiles specific language source file
+// and build into destination file.
+func Complie(src string, des string, lan uint64) error {
+	return compile(src, des, lan)
+}
+
+// Run runs the binary,and receive reader and writer for standard input and output,
+// args are the binary arguments,timeLimit and memoryLimit are in MS and KB.
+func Run(bin string, reader io.Reader, writer io.Writer,
+	args []string, timeLimit int64, memoryLimit int64) *RunningObject {
+
 	// We must ensure here that we are running on the same thread during
 	// the execution of dbg. This is due to the fact that ptrace(2) expects
 	// all commands after PTRACE_ATTACH to come from the same thread.
 
 	runtime.LockOSThread()
-}
 
-//Compile compiles specific language source file
-//and build into destination file.
-func Complie(src string, des string, lan uint64) error {
-	return compile(src, des, lan)
-}
-
-//Run runs the binary,and receive reader and writer for standard input and output,
-//args are the binary arguments,timeLimit and memoryLimit are in MS and KB.
-func Run(bin string, reader io.Reader, writer io.Writer,
-	args []string, timeLimit int64, memoryLimit int64) *RunningObject {
 	defer runtime.UnlockOSThread()
-	var rusage unix.Rusage
-	var runningObject RunningObject
+
+	var (
+		rusage        unix.Rusage
+		runningObject RunningObject
+	)
+
 	runningObject.TimeLimit = timeLimit
 	runningObject.MemoryLimit = memoryLimit
 	cmd := exec.Command(bin, args...)
@@ -99,102 +132,51 @@ func Run(bin string, reader io.Reader, writer io.Writer,
 		panic(err)
 	}
 	proc := cmd.Process
-	tracer, err := ptrace.Attach(proc)
+	tracer, err := Attach(proc)
 	if err != nil {
 		panic(err)
 	}
 	runningObject.Proc = proc
+
+	defer runningObject.Proc.Kill()
+
 	go runningObject.runTick()
-	var rlimit unix.Rlimit
-	rlimit.Cur = uint64(timeLimit)
-	rlimit.Max = uint64(timeLimit)
-	err = prLimit(proc.Pid, unix.RLIMIT_CPU, &rlimit)
+	setTimelimit(runningObject.Proc.Pid, timeLimit)
 	if err != nil {
 		fmt.Println(err)
 		return &runningObject
 	}
+
 	for {
-		status := unix.WaitStatus(0)
-		//ptrace stopped
-		_, err := unix.Wait4(proc.Pid,
-			&status,
-			unix.WSTOPPED,
-			&rusage)
+		_, status, err := wait(proc.Pid, unix.WSTOPPED, &rusage)
 		if err != nil {
 			panic(err)
 		}
+		// status exited
 		if status.Exited() {
 			return &runningObject
 		}
+
 		if status.CoreDump() {
 			fmt.Println("CoreDump")
 			return &runningObject
 		}
-		if status.Continued() {
-			fmt.Println("Continued")
-			return &runningObject
-		}
-		if status.Signaled() {
-			fmt.Println("signal")
-			return &runningObject
-		}
+
 		if status.Stopped() &&
 			status.StopSignal() != unix.SIGTRAP {
+			runningObject.updateVirtualMemory()
+			runningObject.updateTime(&rusage)
 			switch status.StopSignal() {
 			case unix.SIGALRM:
-				vs := virtualMemory(runningObject.Proc.Pid)
-				runningObject.Memory = vs / KB
-				runningObject.Time = rusage.Utime.Sec*1000 +
-					rusage.Utime.Usec/1000
-				if runningObject.Time >
-					runningObject.TimeLimit {
-					runningObject.Status = TLE
-					err := runningObject.Proc.Kill()
-					if err != nil {
-						panic(err)
-					}
-					return &runningObject
-				}
-				realTime := realTime(runningObject.Proc.Pid)
-				if realTime > runningObject.TimeLimit {
-					runningObject.Status = TLE
-					runningObject.Time = realTime
-					err := runningObject.Proc.Kill()
-					if err != nil {
-						log.Println(err)
-					}
-					return &runningObject
-				}
-				if vs/KB > runningObject.MemoryLimit {
-					runningObject.Status = MLE
-					err := runningObject.Proc.Kill()
-					if err != nil {
-						log.Println(err)
-					}
+				if typ := runningObject.exceedLimit(); typ != 0 {
+					runningObject.Status = typ
 					return &runningObject
 				}
 			case unix.SIGXCPU:
-				vs := virtualMemory(runningObject.Proc.Pid)
-				runningObject.Memory = vs / KB
-				runningObject.Time = rusage.Utime.Sec*1000 +
-					rusage.Utime.Usec/1000
 				runningObject.Status = TLE
-				err := runningObject.Proc.Kill()
-				if err != nil {
-					log.Println(err)
-				}
 				return &runningObject
 			case unix.SIGSEGV:
-				//if segmentfault
-				vs := virtualMemory(runningObject.Proc.Pid)
-				runningObject.Memory = vs / KB
-				runningObject.Time = rusage.Utime.Sec*1000 +
-					rusage.Utime.Usec/1000
 				runningObject.Status = RE
-				err := runningObject.Proc.Kill()
-				if err != nil {
-					log.Println(err)
-				}
 				return &runningObject
 			default:
 			}

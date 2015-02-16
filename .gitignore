@@ -1,8 +1,8 @@
 *
-!.*c
-!.*go
-!.*cpp
-
+!*.c
+!*.go
+!*.cpp
+!LICENSE
 tmp/
 sandbox/judge/binary/A*/*
 dockerbox/Dockerfile
