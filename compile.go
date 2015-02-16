@@ -5,18 +5,17 @@ import (
 )
 
 const (
-	C   uint64 = iota //C language
-	CPP               //C Plus Plus langua
-	GO                //Go language
+	C   uint64 = iota // C language
+	CPP               // C Plus Plus langua
+	GO                // Go language
 )
 
-//default comiple options
+// default comiple options
 func compile(src string, des string, lan uint64) error {
 	var cmd = new(exec.Cmd)
 	switch lan {
 	case C:
-		//-lm for gcc math link option
-		cmd = exec.Command("gcc", "-o", des, src, "-lm")
+		cmd = exec.Command("gcc", "-o", des, src, "-lm") //-lm for gcc math link option
 	case CPP:
 		cmd = exec.Command("g++", "-o", des, src)
 	case GO:

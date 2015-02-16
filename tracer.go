@@ -67,6 +67,14 @@ func (r *RunningObject) runTick() {
 	}
 }
 
+func init() {
+	// We must ensure here that we are running on the same thread during
+	// the execution of dbg. This is due to the fact that ptrace(2) expects
+	// all commands after PTRACE_ATTACH to come from the same thread.
+
+	runtime.LockOSThread()
+}
+
 //Compile compiles specific language source file
 //and build into destination file.
 func Complie(src string, des string, lan uint64) error {
@@ -77,7 +85,6 @@ func Complie(src string, des string, lan uint64) error {
 //args are the binary arguments,timeLimit and memoryLimit are in MS and KB.
 func Run(bin string, reader io.Reader, writer io.Writer,
 	args []string, timeLimit int64, memoryLimit int64) *RunningObject {
-	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	var rusage unix.Rusage
 	var runningObject RunningObject

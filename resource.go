@@ -24,7 +24,7 @@ func init() {
 	frequency = time.Second / time.Duration(sc_clk_tck)
 }
 
-//get process virtual memory usage
+// get process virtual memory usage
 func virtualMemory(pid int) int64 {
 	stat, err := os.Open("/proc/" + strconv.Itoa(pid) + "/stat")
 	if err != nil {
@@ -43,7 +43,7 @@ func virtualMemory(pid int) int64 {
 	return vmSize
 }
 
-//return process running time from the start
+// return process running time from the start
 func realTime(pid int) int64 {
 	upTimeFile, err := os.Open("/proc/uptime")
 	if err != nil {
