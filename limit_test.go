@@ -2,6 +2,8 @@ package sandbox
 
 import (
 	"os"
+	"os/exec"
+	"syscall"
 	"testing"
 
 	"golang.org/x/sys/unix"
@@ -24,20 +26,23 @@ func TestCPULimit(t *testing.T) {
 }
 
 func TestMemoryLimit(t *testing.T) {
-	proc, err := os.StartProcess("test/test", []string{"test"}, &os.ProcAttr{})
+	c := exec.Command("test/test")
+	c.Stdout = os.Stdout
+	c.SysProcAttr = &syscall.SysProcAttr{
+		Setpgid: true,
+	}
+	err := c.Start()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	defer proc.Kill()
-	var rlimit unix.Rlimit
-	rlimit.Cur = 1024 * 512
-	rlimit.Max = 1024 * 512
-	prLimit(proc.Pid, unix.RLIMIT_AS, &rlimit) // Address Space = virtual memory
-	status, err := proc.Wait()
-	if err == nil || status.Success() {
-		if err != nil {
-			t.Log(err)
-		}
-		t.Fatal("memory sest failed")
+	err = setMemLimit(c.Process.Pid, 1024*512)
+	if err != nil {
+		t.Fatal(err)
 	}
+	err = c.Wait()
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 }

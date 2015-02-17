@@ -19,10 +19,11 @@ func setMemLimit(pid int, memLimit int64) error {
 	var rlimit unix.Rlimit
 	rlimit.Cur = uint64(memLimit)
 	rlimit.Max = uint64(memLimit)
-	return prLimit(pid, unix.RLIMIT_DATA, &rlimit)
+	return prLimit(pid, unix.RLIMIT_AS, &rlimit)
 
 }
 
+// prLimit is the wrapper for the syscall prlimit.
 func prLimit(pid int, limit uintptr, rlimit *unix.Rlimit) error {
 	_, _, errno := unix.RawSyscall6(unix.SYS_PRLIMIT64,
 		uintptr(pid),
