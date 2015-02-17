@@ -10,18 +10,17 @@ import (
 )
 
 func TestCPULimit(t *testing.T) {
-	proc, err := os.StartProcess("test/main", []string{"main"}, &os.ProcAttr{})
+	c := exec.Command("test/main")
+
+	c.Start()
+
+	err := setTimelimit(c.Process.Pid, 3)
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	defer proc.Kill()
-	var rlimit unix.Rlimit
-	rlimit.Cur = 1000
-	rlimit.Max = 1000
-	prLimit(proc.Pid, unix.RLIMIT_CPU, &rlimit)
-	status, err := proc.Wait()
-	if status.Success() {
-		t.Fatal("cpu limit test failed")
+	err = c.Wait()
+	if err == nil {
+		t.Fatal("CPU time limit test failed")
 	}
 }
 
@@ -35,14 +34,17 @@ func TestMemoryLimit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// sometime
 	err = setMemLimit(c.Process.Pid, 1024*512)
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = c.Wait()
 
-	if err != nil {
-		t.Fatal(err)
+	// soemtimes got exit status 127,sometimes got segment fault,not know why.
+
+	if err == nil {
+		t.Fatal("memory limit test failed")
 	}
 
 }

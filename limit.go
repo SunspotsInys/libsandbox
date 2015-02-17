@@ -6,7 +6,7 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// set time limit for the process
+// set time limit in seconds for the process,generate SIGXCPU.
 func setTimelimit(pid int, timeLimit int64) error {
 	var rlimit unix.Rlimit
 	rlimit.Cur = uint64(timeLimit)
@@ -14,7 +14,7 @@ func setTimelimit(pid int, timeLimit int64) error {
 	return prLimit(pid, unix.RLIMIT_CPU, &rlimit)
 }
 
-// set memory limit for the process
+// set memory limit in bytes for the process,generate SIGSEGV or ENOMEM.
 func setMemLimit(pid int, memLimit int64) error {
 	var rlimit unix.Rlimit
 	rlimit.Cur = uint64(memLimit)
