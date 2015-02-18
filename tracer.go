@@ -142,9 +142,13 @@ func Run(bin string, reader io.Reader, writer io.Writer,
 	defer runningObject.Proc.Kill()
 
 	go runningObject.runTick()
+
 	setTimelimit(runningObject.Proc.Pid, timeLimit)
 	if err != nil {
-		fmt.Println(err)
+		return &runningObject
+	}
+	setMemLimit(runningObject.Proc.Pid, memoryLimit)
+	if err != nil {
 		return &runningObject
 	}
 
@@ -177,8 +181,13 @@ func Run(bin string, reader io.Reader, writer io.Writer,
 				runningObject.Status = TLE
 				return &runningObject
 			case unix.SIGSEGV:
-				runningObject.Status = RE
-				return &runningObject
+				if typ := runningObject.exceedLimit(); typ != 0 {
+					runningObject.Status = typ
+					return &runningObject
+				} else {
+					runningObject.Status = RE
+					return &runningObject
+				}
 			default:
 			}
 		}

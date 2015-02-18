@@ -21,6 +21,11 @@ func TestCPULimit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = syscall.PtraceDetach(c.Process.Pid)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	err = c.Wait()
 	if err == nil {
 		t.Fatal("CPU time limit test failed")
@@ -44,8 +49,7 @@ func TestMemoryLimit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// continue the execution.
-	err = syscall.PtraceCont(c.Process.Pid, 0)
+	err = syscall.PtraceDetach(c.Process.Pid)
 	if err != nil {
 		t.Fatal(err)
 	}
