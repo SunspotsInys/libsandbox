@@ -13,7 +13,7 @@ func TestRealTime(t *testing.T) {
 		panic(err)
 	}
 	time.Sleep(time.Second * 1)
-	realTime := realTime(proc.Pid)
+	realTime := RunningTime(proc.Pid)
 	if realTime < 1000 {
 		t.Fatal("real Time measure error")
 	}
@@ -28,7 +28,7 @@ func TestVmSize(t *testing.T) {
 	}
 	var pid = cmd.Process.Pid
 	time.Sleep(time.Second)
-	vs := virtualMemory(pid)
+	vs := VirtualMemory(pid)
 	if vs < 10000*1024 {
 		t.Fatalf("current virtual memory %d KB is smaller than 10000KB", vs/1024)
 	}

@@ -31,10 +31,10 @@ const (
 )
 
 const (
-	KB = 1024 //KB==1024 bytes
+	KB = 1024 // KB==1024 bytes
 )
 
-//for debug
+// for debug
 var status = map[uint64]string{
 	AC:  "Accept",
 	PE:  "Presentation Error",
@@ -59,8 +59,8 @@ type RunningObject struct {
 
 // send signal SIGALRM to the process every tick.
 func (r *RunningObject) runTick() {
-	ticker := time.NewTicker(frequency)
-	//send alarm signal with time tick frequency
+	ticker := time.NewTicker(TICK)
+	//send alarm signal with time tick TICK
 	for _ = range ticker.C {
 		r.Proc.Signal(os.Signal(unix.SIGALRM))
 	}
@@ -68,14 +68,14 @@ func (r *RunningObject) runTick() {
 
 // update virtual memory.
 func (r *RunningObject) updateVirtualMemory() {
-	r.Memory = virtualMemory(r.Proc.Pid) / KB
+	r.Memory = VirtualMemory(r.Proc.Pid) / KB
 }
 
 // update time used from the max of rusage and the /porc/{pid}/stat
 func (r *RunningObject) updateTime(rusg *unix.Rusage) {
 	r.Time = rusg.Utime.Sec*1000 +
 		rusg.Utime.Usec/1000 // MS
-	rt := realTime(r.Proc.Pid)
+	rt := RunningTime(r.Proc.Pid)
 	if r.Time < rt {
 		r.Time = rt
 	}
