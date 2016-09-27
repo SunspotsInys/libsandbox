@@ -1,4 +1,4 @@
-package sandbox
+package libsandbox
 
 import (
 	"bytes"
@@ -13,6 +13,29 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// TODO: Do not use stdout to communicate
+
+// sandbox config
+type Config struct {
+	Args   []string
+	Input  io.Reader
+	Memory int64
+	Time   int64
+}
+
+func (conf Config) Validate() error {
+	if len(conf.Args) == 0 {
+		return errors.New("process or arguments not set")
+	}
+	if conf.Memory == 0 {
+		return errors.New("memory limit not set")
+	}
+	if conf.Time == 0 {
+		return errors.New("time limit not set")
+	}
+	return nil
+}
+
 var (
 	OutOfTimeError   = errors.New("out of time")
 	OutOfMemoryError = errors.New("out of memory")
@@ -26,8 +49,25 @@ type StdSandbox struct {
 	MemoryLimit int64     // memory limit in kb
 }
 
-func (s StdSandbox) Run() ([]byte, error) {
+func NewStdSandbox(conf Config) (Sandbox, error) {
+	if err := conf.Validate(); err != nil {
+		return nil, err
+	}
+	var args []string
+	if len(conf.Args) > 1 {
+		args = conf.Args[1:]
 
+	}
+	return StdSandbox{
+		Bin:         conf.Args[0],
+		Args:        args,
+		Input:       conf.Input,
+		MemoryLimit: conf.Memory,
+		TimeLimit:   conf.Time,
+	}, nil
+}
+
+func (s StdSandbox) Run() ([]byte, error) {
 	cmd := exec.Command(s.Bin, s.Args...)
 	if cmd.Stdin != nil {
 		return nil, errors.New("stdin is not nil")
@@ -42,7 +82,6 @@ func (s StdSandbox) Run() ([]byte, error) {
 	cmd.Stderr = buf
 	cmd.Stdout = buf
 	cmd.Stdin = s.Input
-
 	err := cmd.Start()
 	if err != nil {
 		return nil, err
@@ -57,6 +96,7 @@ func (s StdSandbox) Run() ([]byte, error) {
 			err := cmd.Process.Signal(os.Signal(unix.SIGSTOP))
 			if err != nil {
 				fmt.Println(err)
+				return
 			}
 		}
 	}()
@@ -65,10 +105,11 @@ func (s StdSandbox) Run() ([]byte, error) {
 	for {
 		_, status, err := wait(cmd.Process.Pid, unix.WSTOPPED, &rusage)
 		if err != nil {
-			fmt.Println("wait", err)
 			return nil, err
 		}
 		if status.Exited() {
+			// walkaround: wait until internal write buffer to flush.
+			cmd.Wait()
 			return buf.Bytes(), nil
 		}
 
@@ -90,10 +131,9 @@ func (s StdSandbox) Run() ([]byte, error) {
 				rss := RssSize(cmd.Process.Pid)
 				// RSS size dosen't include swap out memory,
 				// virtual memory dosen't include memory demand-loaded int.
-				// So set limit: memory < 150% * rss and vm > memory*150%
+				// So set limit: memory < 150% * rss and vm > memory*1000%
 				if rss*3 > s.MemoryLimit*2 ||
-					vm*2 > s.MemoryLimit*3 {
-					fmt.Printf("rss %d, vm %d, limit %d", rss, vm, s.MemoryLimit)
+					vm > s.MemoryLimit*10 {
 					return nil, OutOfMemoryError
 
 				}

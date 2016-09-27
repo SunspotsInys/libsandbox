@@ -1,4 +1,4 @@
-package sandbox
+package libsandbox
 
 import (
 	"testing"
@@ -25,7 +25,7 @@ func TestOutOfMemory(t *testing.T) {
 		Args:        []string{"-c", "sleep 3"},
 		Input:       nil,
 		TimeLimit:   1000,
-		MemoryLimit: 2,
+		MemoryLimit: 100,
 	}.Run()
 	if err == nil {
 		t.Fatalf("no error get out '%s', want %s\n", out, OutOfMemoryError)

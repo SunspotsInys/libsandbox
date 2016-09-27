@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -12,12 +13,14 @@ func TestPresentationError(t *testing.T) {
 		"-c", "-s", "judge/src/A7/main.c", "-b",
 		"judge/binary/A7/main", "-i", "judge/src/A7/input",
 		"-o", "judge/src/A7/output")
-	out, _ := cmd.CombinedOutput()
-	result := fmt.Sprintf("%s", out)
-	results := strings.Split(result, ":")
-	status := results[0]
-	if status != "FE" {
-		t.Logf("%s", status)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := Result{}
+	json.Unmarshal(out, &r)
+	if r.Status != "FE" {
+		t.Logf("%s", r.Status)
 		t.Logf("%s", out)
 		t.Fatal("Test Presentation Error Failed")
 	}
@@ -28,7 +31,7 @@ func TestSegmentfault(t *testing.T) {
 		"-c", "-s", "judge/src/A6/main.c", "-b",
 		"judge/binary/A6/main", "-i", "judge/src/A6/input",
 		"-o", "judge/src/A6/output")
-	out, _ := cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
 	result := fmt.Sprintf("%s", out)
 	results := strings.Split(result, ":")
 	status := results[0]

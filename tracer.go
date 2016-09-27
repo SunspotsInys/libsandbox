@@ -3,7 +3,7 @@
 //Sandbox uses /proc/{id}/stats to check virtual memory usage and,/proc/uptime for time run.
 //Every timer tick,send a signal to check the running status,if any erros happend kill the
 //process and report error,or check the standard input and output to report wrong answer or accept.
-package sandbox
+package libsandbox
 
 import (
 	"fmt"
