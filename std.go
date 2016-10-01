@@ -7,11 +7,34 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"syscall"
 	"time"
-
-	"golang.org/x/sys/unix"
+	"unsafe"
 )
+
+// workaround use this wait will not get exit status 3 error.
+func wait(pid int, rusage *syscall.Rusage) (int, *syscall.WaitStatus, error) {
+	var status syscall.WaitStatus
+	var siginfo [128]byte
+	// If we can block until Wait4 will succeed immediately, do so.
+	psig := &siginfo[0]
+	_, _, e := syscall.Syscall6(syscall.SYS_WAITID, 1, uintptr(pid), uintptr(unsafe.Pointer(psig)), syscall.WEXITED|syscall.WNOWAIT, 0, 0)
+	// psig may be garbage collected before
+	// syscall, KeepAlive make it alive util
+	// sysacll return.
+	runtime.KeepAlive(psig)
+	if e != 0 {
+		if e != syscall.ENOSYS {
+			return 0, nil, os.NewSyscallError("waitid", e)
+		}
+	}
+	wpid, err := syscall.Wait4(pid, &status, 0, rusage) // for rusage collect
+	if err != nil {
+		return 0, nil, err
+	}
+	return wpid, &status, err
+}
 
 // TODO: Do not use stdout to communicate
 
@@ -41,12 +64,19 @@ var (
 	OutOfMemoryError = errors.New("out of memory")
 )
 
+func RuntimeError(signal os.Signal) error {
+	return fmt.Errorf("receive signal %v", signal)
+}
+
 type StdSandbox struct {
 	Bin         string    // binary path
 	Args        []string  // arguments
 	Input       io.Reader // standard input
 	TimeLimit   int64     // time limit in ms
 	MemoryLimit int64     // memory limit in kb
+
+	time   int64 // time used
+	memory int64 // memory used
 }
 
 func NewStdSandbox(conf Config) (Sandbox, error) {
@@ -58,7 +88,7 @@ func NewStdSandbox(conf Config) (Sandbox, error) {
 		args = conf.Args[1:]
 
 	}
-	return StdSandbox{
+	return &StdSandbox{
 		Bin:         conf.Args[0],
 		Args:        args,
 		Input:       conf.Input,
@@ -67,7 +97,14 @@ func NewStdSandbox(conf Config) (Sandbox, error) {
 	}, nil
 }
 
-func (s StdSandbox) Run() ([]byte, error) {
+func (s *StdSandbox) Time() int64 {
+	return s.time
+}
+func (s *StdSandbox) Memory() int64 {
+	return s.memory
+}
+
+func (s *StdSandbox) Run() ([]byte, error) {
 	cmd := exec.Command(s.Bin, s.Args...)
 	if cmd.Stdin != nil {
 		return nil, errors.New("stdin is not nil")
@@ -86,70 +123,62 @@ func (s StdSandbox) Run() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	setTimelimit(cmd.Process.Pid, s.TimeLimit/1000)
-
-	// Send signal SIGALRM to the process every tick.
+	defer cmd.Process.Kill()
+	var errCh chan error = make(chan error)
 	go func() {
-		ticker := time.NewTicker(TICK)
-		for range ticker.C {
-			err := cmd.Process.Signal(os.Signal(unix.SIGSTOP))
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
+		// workaround 不知道为什么标准的wait不行
+		var rusage syscall.Rusage
+		_, status, err := wait(cmd.Process.Pid, &rusage)
+		if err != nil {
+			fmt.Println("wait error", err)
+			errCh <- err
 		}
+		if status.Signaled() {
+			errCh <- fmt.Errorf("get signal %s", status.Signal())
+		}
+		close(errCh)
 	}()
 
-	var rusage unix.Rusage
-	for {
-		_, status, err := wait(cmd.Process.Pid, unix.WSTOPPED, &rusage)
-		if err != nil {
-			return nil, err
-		}
-		if status.Exited() {
-			// walkaround: wait until internal write buffer to flush.
-			cmd.Wait()
-			return buf.Bytes(), nil
+	// Send signal SIGSTOP to the process every tick.
+	ticker := time.NewTicker(TICK)
+	for range ticker.C {
+		ok, vm, rss, runningTime, cpuTime := GetResourceUsage(cmd.Process.Pid)
+		if !ok {
+			break
 		}
 
-		if status.Stopped() {
-			switch status.StopSignal() {
-			case unix.SIGSTOP:
-				runningTime := RunningTime(cmd.Process.Pid)
-				cpuTime := CpuTime(cmd.Process.Pid)
-				if cpuTime > s.TimeLimit ||
-					// Like sleep, some process consumes no cpu usage, but does
-					// consume runnig time, so here limit real runnig time to
-					// 150% cpu usage time.
-					runningTime > 3*s.TimeLimit/2 {
-					return nil, OutOfTimeError
+		// Like sleep, some process consumes no cpu usage, but does
+		// consume runnig time, so here limit real runnig time to
+		// 150% cpu usage time.
+		if cpuTime > s.TimeLimit ||
+			runningTime > 3*s.TimeLimit/2 {
+			s.time = runningTime
+			err = OutOfTimeError
+			break
 
-				}
-
-				vm := VirtualMemory(cmd.Process.Pid)
-				rss := RssSize(cmd.Process.Pid)
-				// RSS size dosen't include swap out memory,
-				// virtual memory dosen't include memory demand-loaded int.
-				// So set limit: memory < 150% * rss and vm > memory*1000%
-				if rss*3 > s.MemoryLimit*2 ||
-					vm > s.MemoryLimit*10 {
-					return nil, OutOfMemoryError
-
-				}
-			case unix.SIGXCPU:
-				return nil, OutOfTimeError
-			default:
-				fmt.Println("default signal", status.StopSignal())
-
-			}
 		}
-		syscall.Kill(cmd.Process.Pid, syscall.SIGCONT)
+
+		// RSS size dosen't include swap out memory,
+		// virtual memory dosen't include memory demand-loaded int.
+		// So set limit: memory < 150% * rss and vm > memory*1000%
+		if rss*3 > s.MemoryLimit*2 ||
+			vm > s.MemoryLimit*10 {
+			err = OutOfMemoryError
+			s.memory = rss * 3 / 2
+			err = OutOfMemoryError
+			break
+
+		}
 	}
-
-	return buf.Bytes(), nil
+	if err != nil {
+		return nil, err
+	}
+	err = <-errCh
+	return buf.Bytes(), err
 }
 
 type Sandbox interface {
 	Run() (output []byte, err error)
+	Time() int64
+	Memory() int64
 }

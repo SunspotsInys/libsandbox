@@ -27,6 +27,63 @@ func init() {
 	PAGESIZE = int64(syscall.Getpagesize())
 }
 
+func GetResourceUsage(pid int) (ok bool, vm int64, rss int64,
+	rt int64, ct int64) {
+	stat, err := os.Open("/proc/" + strconv.Itoa(pid) + "/stat")
+	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		} else {
+			panic(err)
+		}
+	}
+	bs, err := ioutil.ReadAll(stat)
+	if err != nil {
+		panic(err)
+	}
+	//virtual memory size is 23nd paramater in the stat file,in bytes
+	vm, err = strconv.ParseInt(strings.Split(string(bs), " ")[22], 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	rss, err = strconv.ParseInt(strings.Split(string(bs), " ")[23], 10, 64)
+	rss = rss * PAGESIZE
+
+	// 14 stime 15 utime  TODO: consider cstime cutime
+	stime, err := strconv.ParseInt(strings.Split(string(bs), " ")[13], 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	utime, err := strconv.ParseInt(strings.Split(string(bs), " ")[14], 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	ct = int64(float64(utime+stime) * 1000 / float64(sc_clk_tck))
+	//startTime is 22nd paramater in the stat file
+	startTime, err := strconv.ParseInt(strings.Split(string(bs), " ")[21], 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	upTimeFile, err := os.Open("/proc/uptime")
+	if err != nil {
+		panic(err)
+	}
+	defer upTimeFile.Close()
+	bs, err = ioutil.ReadAll(upTimeFile)
+	if err != nil {
+		panic(err)
+	}
+	//uptime is first paramater in uptime file
+	upTime, err := strconv.ParseFloat(strings.Split(string(bs), " ")[0], 64)
+	if err != nil {
+		panic(err)
+	}
+	rt = int64(upTime*1000) - int64(startTime*1000)/sc_clk_tck
+	ok = true
+	return
+
+}
+
 // VirtualMemory returns process virtual memory
 func VirtualMemory(pid int) int64 {
 	stat, err := os.Open("/proc/" + strconv.Itoa(pid) + "/stat")
