@@ -6,4 +6,4 @@ reviewers:
   members:
     - ggaaooppeenngg
   name: pullapprove
-    required: 1
+  required: 1
