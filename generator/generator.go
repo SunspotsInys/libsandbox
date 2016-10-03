@@ -9,7 +9,7 @@ import (
 	"os/exec"
 	"path"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 )
 
 const (
