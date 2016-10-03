@@ -4,6 +4,7 @@
 !*.go
 !*.cpp
 !LICENSE
+!.pullapprove.yml
 tmp/
 sandbox/judge/binary/A*/*
 dockerbox/Dockerfile
