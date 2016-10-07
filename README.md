@@ -3,21 +3,21 @@
 [![GoDoc](https://godoc.org/github.com/ggaaooppeenngg/libsandbox?status.svg)](https://godoc.org/github.com/ggaaooppeenngg/libsandbox)
 [![Build Status](https://drone.io/github.com/ggaaooppeenngg/libsandbox/status.png)](https://drone.io/github.com/ggaaooppeenngg/libsandbox/latest)
 
-#sandbox
----
+#Sandbox
 
 Sandbox for online judge.
 
-##install
+##Install
 
 *command*
 
 ```
 $ go get github.com/ggaaooppeenngg/libsandbox
+$ go install github.com/ggaaooppeenngg/libsandbox/...
 
 ```
 
-###Usage:
+###Usage
 
 ```
 // compile before running and specify limit
