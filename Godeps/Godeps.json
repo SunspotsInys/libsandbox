@@ -1,0 +1,20 @@
+{
+	"ImportPath": "github.com/ggaaooppeenngg/libsandbox",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/satori/go.uuid",
+			"Comment": "v1.1.0-1-g0aa62d5",
+			"Rev": "0aa62d5ddceb50dbcb909d790b5345affd3669b6"
+		},
+		{
+			"ImportPath": "github.com/urfave/cli",
+			"Comment": "v1.18.0-65-g61f519f",
+			"Rev": "61f519fe5e57c2518c03627b194899a105838eba"
+		}
+	]
+}
