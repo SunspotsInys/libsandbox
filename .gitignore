@@ -1,10 +1,12 @@
-*
 !test/
 !*.c
 !*.go
 !*.cpp
 !LICENSE
 !.pullapprove.yml
+!.travis.yml
+!vendor/
+!Godeps/
 tmp/
 sandbox/judge/binary/A*/*
 dockerbox/Dockerfile
